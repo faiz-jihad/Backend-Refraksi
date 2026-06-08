@@ -176,7 +176,7 @@
                 <li>Konsultasi AI 24/7: Tanya jawab dengan asisten dokter mata virtual.</li>
                 <li>RS Rujukan Terdekat: Temukan klinik dan rumah sakit mata terdekat.</li>
             </ul>
-            <p>Bergabunglah dengan lebih dari 50.000 pengguna aktif. <a href="{{ route('login') }}">Masuk</a> atau <a href="{{ route('register') }}">Daftar Gratis</a> sekarang.</p>
+            <p>Bergabunglah dengan lebih dari 50.000 pengguna aktif. <a href="{{ route('login') }}">Masuk</a> atau <a href="/register">Daftar Gratis</a> sekarang.</p>
         </div>
     </noscript>
 
