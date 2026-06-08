@@ -349,7 +349,7 @@ export default function AdminDashboard({ stats: initialStats, recentResults: ini
                     Metrik Utama
                 </span>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
                     {cardOrder.map((key) => {
                         const c = statCardsData[key];
                         return (
@@ -360,10 +360,10 @@ export default function AdminDashboard({ stats: initialStats, recentResults: ini
                                     boxShadow: theme.shadowOutSm,
                                     backgroundColor: theme.bgSurface 
                                 }}
-                                className={`p-6 rounded-[24px] border ${theme.borderLight} transition-all duration-300 relative overflow-hidden`}
+                                className={`p-5 sm:p-6 rounded-[24px] border ${theme.borderLight} transition-all duration-300 relative overflow-hidden`}
                             >
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className={`p-3 rounded-xl ${c.bg} ${c.color} shadow-inner`}>
+                                    <div className={`p-2.5 rounded-xl ${c.bg} ${c.color} shadow-inner`}>
                                         {c.icon}
                                     </div>
                                     {key === 'system' && (
