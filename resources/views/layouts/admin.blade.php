@@ -825,6 +825,21 @@
         }
         checkMobile();
         window.addEventListener('resize', checkMobile);
+
+        // Global Search Engine (Real-time Table Filtering)
+        const globalSearch = document.getElementById('globalSearch');
+        if (globalSearch) {
+            globalSearch.addEventListener('input', function(e) {
+                const term = e.target.value.toLowerCase();
+                // Find all table rows in the current page
+                const rows = document.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(term) ? '' : 'none';
+                });
+            });
+        }
     </script>
 </body>
 </html>
