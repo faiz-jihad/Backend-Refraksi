@@ -24,24 +24,34 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
                 transition={{ duration: 0.5, ease: [0.25, 0, 0, 1] }}
                 style={{
                     position: 'fixed',
-                    top: scrolled ? 0 : '12px',
-                    left: scrolled ? 0 : '50%',
-                    transform: scrolled ? 'none' : 'translateX(-50%)',
-                    width: scrolled ? '100%' : 'min(100% - 3rem, 1100px)',
-                    borderRadius: scrolled ? '0' : '16px',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
                     zIndex: 1000,
-                    background: scrolled
-                        ? 'rgba(5, 10, 20, 0.85)'
-                        : 'rgba(10, 20, 40, 0.7)',
+                    padding: scrolled ? '0' : '12px 1.5rem',
+                    transition: 'padding 0.4s cubic-bezier(0.25, 0, 0, 1)',
+                    pointerEvents: 'none', // biarkan klik tembus di luar pill
+                }}
+            >
+                <div style={{ 
+                    pointerEvents: 'auto',
+                    maxWidth: scrolled ? '100%' : '1100px', 
+                    margin: '0 auto', 
+                    height: scrolled ? '70px' : '60px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    gap: '2rem',
+                    background: scrolled ? 'rgba(5, 10, 20, 0.85)' : 'rgba(10, 20, 40, 0.7)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
-                    borderBottom: scrolled ? `1px solid ${T.border}` : `1px solid ${T.border2}`,
+                    borderBottom: scrolled ? `1px solid ${T.border}` : 'none',
+                    border: scrolled ? 'none' : `1px solid ${T.border2}`,
+                    borderRadius: scrolled ? '0' : '16px',
                     boxShadow: scrolled ? '0 1px 0 rgba(255,255,255,0.04)' : '0 8px 32px rgba(0,0,0,0.4)',
                     transition: 'all 0.4s cubic-bezier(0.25, 0, 0, 1)',
                     padding: '0 1.5rem',
-                }}
-            >
-                <div style={{ maxWidth: '1400px', margin: '0 auto', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem' }}>
+                }}>
 
                     {/* Logo */}
                     <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
