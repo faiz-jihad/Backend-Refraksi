@@ -23,7 +23,7 @@ class RefractionResource extends JsonResource
             'friendly_summary' => $ai['friendly_summary'] ?? null,
             'action_required' => $ai['action_required'] ?? (($ai['predicted_class'] ?? 'Normal') !== 'Normal'),
             'image_url'       => $this->image_path ? '/storage/' . $this->image_path : null,
-            'created_at'      => $this->created_at->toISOString(),
+            'created_at'      => $this->created_at ? $this->created_at->toIso8601String() : null,
             'results'         => [
                 'predicted_class' => $ai['predicted_class'] ?? $ai['condition_category'] ?? 'Normal',
                 'visual_acuity'   => $this->visual_acuity,

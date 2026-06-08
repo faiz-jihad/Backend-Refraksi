@@ -37,7 +37,7 @@ class ActivityController extends Controller
                 'title' => 'Deteksi Mata: ' . $condition,
                 'description' => 'Akurasi ' . (($ai['confidence'] ?? 1.0) * 100) . '% • ' . ($d->visual_acuity ?? '20/20'),
                 'time' => $d->created_at->diffForHumans(),
-                'timestamp' => $d->created_at->toISOString(),
+                'timestamp' => $d->created_at ? $d->created_at->toIso8601String() : '',
             ];
         }
 
@@ -54,7 +54,7 @@ class ActivityController extends Controller
                 'title' => 'Konsultasi AI',
                 'description' => $c->title ?? 'Sesi tanya jawab kesehatan mata',
                 'time' => $c->updated_at->diffForHumans(),
-                'timestamp' => $c->updated_at->toISOString(),
+                'timestamp' => $c->updated_at ? $c->updated_at->toIso8601String() : '',
             ];
         }
 

@@ -25,7 +25,7 @@ class UserResource extends JsonResource
             'medical_history' => $this->medical_history,
             'profile_picture' => $this->profile_picture,
             'role'  => $this->role,
-            'created_at' => $this->created_at->toISOString(),
+            'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
         ];
     }
 }
