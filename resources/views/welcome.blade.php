@@ -14,42 +14,122 @@
     <meta property="og:description" content="Teknologi screening digital untuk melindungi penglihatan Anda. Deteksi dini, akurat, dan terpercaya.">
     <meta property="og:type" content="website">
 
-    <!-- Google Fonts -->
+    {{--
+        PERFORMANCE: Inter font loaded non-blocking via preconnect + display=swap
+        Removed old Montserrat to eliminate extra network round-trip.
+        Inter is already used by all rebuilt components (WelcomeApp.jsx design tokens).
+    --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    {{-- Non-blocking: media="print" trick ensures font doesn't block first paint --}}
+    <link rel="preload" as="style"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet"
+              href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+    </noscript>
 
+    <!-- Critical inline CSS: instant first paint, no FOUC, no layout shift -->
     <style>
-        * { box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; background: #E7E5E4; }
+        /* Critical reset — paint immediately without waiting for bundle */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* DESIGN.MD: Montserrat primary font */
-        body { font-family: 'Montserrat', sans-serif; color: #1E2938; }
-
-        /* Neumorphic scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #E7E5E4; box-shadow: inset 2px 2px 4px #b5b3b2, inset -2px -2px 4px #ffffff; }
-        ::-webkit-scrollbar-thumb { background: #b5b3b2; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #006666; }
-
-        /* Scan animation for mobile canvas */
-        @keyframes scan {
-            0% { top: 0; opacity: 0.8; }
-            50% { opacity: 0.4; }
-            100% { top: 100%; opacity: 0.8; }
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            scroll-behavior: smooth;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        body {
+            /* Dark theme matches WelcomeApp.jsx T.bg — prevents white flash */
+            background: #050A14;
+            color: #F0F4FF;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
         }
+
+        /* Loader — matches new dark theme, immediately visible before JS */
+        #wc-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            background: #050A14;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        #wc-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .wc-loader-logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0EA5E9, #8B5CF6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 40px rgba(14, 165, 233, 0.4);
+            animation: wc-logo-pulse 2s ease-in-out infinite;
+        }
+
+        .wc-loader-ring {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid rgba(14, 165, 233, 0.15);
+            border-top-color: #0EA5E9;
+            animation: wc-spin 0.8s linear infinite;
+        }
+
+        .wc-loader-text {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #4B5E8A;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        @keyframes wc-spin { to { transform: rotate(360deg); } }
+        @keyframes wc-logo-pulse { 0%, 100% { box-shadow: 0 0 40px rgba(14,165,233,0.4); } 50% { box-shadow: 0 0 60px rgba(14,165,233,0.7); } }
+
+        /* Prevent scrollbar appearing during load */
+        body.loading { overflow: hidden; }
+
+        /* Scrollbar — dark theme */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #050A14; }
+        ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #0EA5E9; }
     </style>
 
-    <!-- Styles and Scripts via Vite -->
+    <!-- Styles and Scripts via Vite (deferred by default in Vite 5+) -->
     @vite(['resources/css/app.css', 'resources/js/welcome.jsx'])
 </head>
 
-<body class="antialiased" style="background:#E7E5E4; font-family: 'Montserrat', sans-serif; color: #1E2938;">
+<body class="loading antialiased">
+
+    <!-- Instant loader: visible BEFORE React bundle downloads -->
+    <div id="wc-loader">
+        <div class="wc-loader-logo">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        </div>
+        <div class="wc-loader-ring"></div>
+        <p class="wc-loader-text">MataCeria</p>
+    </div>
 
     @php
         try {
@@ -64,20 +144,20 @@
             if (empty($dbDoctors)) {
                 $dbDoctors = [
                     ['name' => 'dr. Sari Andini, Sp.M', 'time' => 'Respon < 5 mnt'],
-                    ['name' => 'dr. Andi Wijaya, Sp.M', 'time' => 'Respon < 10 mnt']
+                    ['name' => 'dr. Andi Wijaya, Sp.M',  'time' => 'Respon < 10 mnt']
                 ];
             }
         } catch (\Exception $e) {
             $patientsCount = '50,000+';
-            $doctorsCount = '120+';
-            $dbDoctors = [
+            $doctorsCount  = '120+';
+            $dbDoctors     = [
                 ['name' => 'dr. Sari Andini, Sp.M', 'time' => 'Respon < 5 mnt'],
-                ['name' => 'dr. Andi Wijaya, Sp.M', 'time' => 'Respon < 10 mnt']
+                ['name' => 'dr. Andi Wijaya, Sp.M',  'time' => 'Respon < 10 mnt']
             ];
         }
     @endphp
 
-    <!-- React Root Container -->
+    <!-- React Root Container — hidden until app mounts -->
     <div id="welcome-root"
          data-login-route="{{ route('login') }}"
          data-admin-route="{{ url('/admin') }}"
@@ -86,21 +166,23 @@
          data-stats-patients="{{ $patientsCount }}"
          data-stats-doctors="{{ $doctorsCount }}"
          data-doctors="{{ json_encode($dbDoctors) }}"
-    >
-        <!-- Fallback loader (neumorphic) -->
-        <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:#E7E5E4;">
-            <div style="text-align:center; font-family:'Montserrat', sans-serif;">
-                <div style="width:48px; height:48px; border-radius:50%; background:#E7E5E4; box-shadow:5px 5px 10px #b5b3b2,-5px -5px 10px #ffffff; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
-                    <div style="width:32px; height:32px; border:2px solid transparent; border-top:2px solid #006666; border-radius:50%; animation:spin 1s linear infinite;"></div>
-                </div>
-                <p style="font-size:10px; letter-spacing:0.15em; color:#64748b; text-transform:uppercase;">Loading MataCeria...</p>
-            </div>
-        </div>
-    </div>
+         style="opacity:0; transition: opacity 0.4s ease;"
+    ></div>
 
-    <style>
-        @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
+    <script>
+        // Dismiss loader as soon as React has mounted and first paint is done
+        // Called from WelcomeApp.jsx via window.__mcReady()
+        window.__mcReady = function () {
+            document.body.classList.remove('loading');
+            const loader = document.getElementById('wc-loader');
+            const root   = document.getElementById('welcome-root');
+            if (loader) loader.classList.add('hidden');
+            if (root)   root.style.opacity = '1';
+        };
+
+        // Safety fallback: force show after 5s even if React is slow
+        setTimeout(window.__mcReady, 5000);
+    </script>
 
 </body>
 </html>

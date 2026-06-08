@@ -1,16 +1,15 @@
-/**
- * WelcomeApp — Root Orchestrator
- * Handles scroll state and routes all section rendering
- */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import NavBar from './DarkNavbar';
 import HeroSection from './HeroSection';
-import StatsSection from './StatsSection';
-import BentoFeatures from './BentoFeatures';
-import ProcessTimeline from './ProcessTimeline';
-import MobileShowcase from './MobileShowcase';
-import TestimonialMarquee from './TestimonialMarquee';
+
+// Eagerly loaded (Above the fold)
+// Lazy loaded (Below the fold) for performance
+const StatsSection = React.lazy(() => import('./StatsSection'));
+const BentoFeatures = React.lazy(() => import('./BentoFeatures'));
+const ProcessTimeline = React.lazy(() => import('./ProcessTimeline'));
+const MobileShowcase = React.lazy(() => import('./MobileShowcase'));
+const TestimonialMarquee = React.lazy(() => import('./TestimonialMarquee'));
 
 /* ─── Shared Design Tokens ─── */
 export const T = {
@@ -42,6 +41,12 @@ export default function WelcomeApp({ loginRoute, adminRoute, isAuthenticated, us
             setScrollY(window.scrollY);
         };
         window.addEventListener('scroll', onScroll, { passive: true });
+
+        // Signal the blade loader to dismiss — called once after React mounts
+        if (typeof window.__mcReady === 'function') {
+            window.__mcReady();
+        }
+
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
@@ -60,14 +65,16 @@ export default function WelcomeApp({ loginRoute, adminRoute, isAuthenticated, us
                     adminRoute={adminRoute}
                     isAuthenticated={isAuthenticated}
                 />
-                <StatsSection
-                    statsPatients={statsPatients}
-                    statsDoctors={statsDoctors}
-                />
-                <BentoFeatures doctors={doctors} />
-                <ProcessTimeline />
-                <MobileShowcase />
-                <TestimonialMarquee />
+                <Suspense fallback={<div style={{ height: '500px' }} />}>
+                    <StatsSection
+                        statsPatients={statsPatients}
+                        statsDoctors={statsDoctors}
+                    />
+                    <BentoFeatures doctors={doctors} />
+                    <ProcessTimeline />
+                    <MobileShowcase />
+                    <TestimonialMarquee />
+                </Suspense>
                 <CTASection
                     loginRoute={loginRoute}
                     adminRoute={adminRoute}
@@ -77,9 +84,8 @@ export default function WelcomeApp({ loginRoute, adminRoute, isAuthenticated, us
             </main>
             <SiteFooter />
 
-            {/* Global CSS */}
+            {/* Global CSS — no font @import, font loaded via blade <link preload> */}
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
                 *, *::before, *::after { box-sizing: border-box; }
                 html { scroll-behavior: smooth; }
                 body { margin: 0; -webkit-font-smoothing: antialiased; }
