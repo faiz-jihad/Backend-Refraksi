@@ -24,4 +24,22 @@ class RegisterRequest extends FormRequest
             'status_pekerjaan'   => ['nullable', 'string'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Nama wajib diisi.',
+            'name.max' => 'Nama tidak boleh lebih dari 255 karakter.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email sudah terdaftar.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min' => 'Password minimal terdiri dari 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'umur.integer' => 'Umur harus berupa angka.',
+            'umur.min' => 'Umur minimal 1 tahun.',
+            'umur.max' => 'Umur maksimal 120 tahun.',
+            'kelamin.in' => 'Jenis kelamin harus Laki-laki atau Perempuan.',
+        ];
+    }
 }
