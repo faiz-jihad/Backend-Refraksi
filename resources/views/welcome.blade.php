@@ -6,13 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <!-- SEO -->
+    <!-- SEO & Indexing -->
     <title>MataCeria — Platform Kesehatan Mata Digital Indonesia #1</title>
     <meta name="description" content="Platform kesehatan mata berbasis screening digital terdepan di Indonesia. Deteksi dini penyakit mata, tes refraksi digital, dan konsultasi dokter spesialis mata dalam satu ekosistem.">
-    <meta name="keywords" content="kesehatan mata, screening digital, deteksi glaukoma, tes refraksi, telemedicine mata, optik online">
+    <meta name="keywords" content="kesehatan mata, screening digital, deteksi glaukoma, tes refraksi, telemedicine mata, optik online, ai kesehatan">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <link rel="canonical" href="{{ url('/') }}" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:title" content="MataCeria — Digital Eye Health Platform Indonesia">
     <meta property="og:description" content="Teknologi screening digital untuk melindungi penglihatan Anda. Deteksi dini, akurat, dan terpercaya.">
-    <meta property="og:type" content="website">
+    <meta property="og:image" content="{{ url('/images/og-mataceria.jpg') }}">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{{ url('/') }}">
+    <meta name="twitter:title" content="MataCeria — Digital Eye Health Platform Indonesia">
+    <meta name="twitter:description" content="Teknologi screening digital untuk melindungi penglihatan Anda. Deteksi dini, akurat, dan terpercaya.">
 
     {{--
         PERFORMANCE: Inter font loaded non-blocking via preconnect + display=swap
@@ -156,6 +168,22 @@
             ];
         }
     @endphp
+
+    <!-- Fallback Content for SEO & Search Engine Crawlers (Googlebot) -->
+    <noscript>
+        <div style="padding: 2rem; background: #050A14; color: #fff;">
+            <h1>MataCeria — Lindungi Penglihatanmu dari Sekarang</h1>
+            <p>Platform kesehatan mata digital pertama di Indonesia. Deteksi dini, tes refraksi digital, dan konsultasi dokter dalam satu ekosistem terintegrasi berbasis AI.</p>
+            <h2>Fitur Utama MataCeria</h2>
+            <ul>
+                <li>Tes Refraksi Digital: Ukur ketajaman penglihatan dengan metode digital.</li>
+                <li>AI Diagnostics: Model Gemini AI menganalisis pola penglihatan.</li>
+                <li>Konsultasi AI 24/7: Tanya jawab dengan asisten dokter mata virtual.</li>
+                <li>RS Rujukan Terdekat: Temukan klinik dan rumah sakit mata terdekat.</li>
+            </ul>
+            <p>Bergabunglah dengan lebih dari 50.000 pengguna aktif. <a href="{{ route('login') }}">Masuk</a> atau <a href="{{ route('register') }}">Daftar Gratis</a> sekarang.</p>
+        </div>
+    </noscript>
 
     <!-- React Root Container — hidden until app mounts -->
     <div id="welcome-root"
