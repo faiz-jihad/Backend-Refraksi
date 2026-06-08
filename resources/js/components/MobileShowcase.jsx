@@ -139,8 +139,8 @@ export default function MobileShowcase() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {/* APK Direct */}
                             <a
-                                href="#"
-                                onClick={e => { e.preventDefault(); alert('APK download akan tersedia segera!'); }}
+                                href="/downloads/mataceria-latest.apk"
+                                download="MataCeria-Latest.apk"
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: '12px',
                                     padding: '1rem 1.5rem', borderRadius: '14px',
