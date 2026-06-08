@@ -430,14 +430,20 @@ export default function WelcomeApp({
 
                             <div style={{ display: "flex", gap: "2rem" }}>
                                 {[
-                                    "Privasi",
-                                    "Syarat",
-                                    "Keamanan",
-                                    "Kontak",
+                                    { label: "Privasi", href: "#" },
+                                    { label: "Syarat", href: "#" },
+                                    { label: "Keamanan", href: "#" },
+                                    { label: "Kontak", href: "#tentang" },
                                 ].map((l) => (
                                     <a
-                                        key={l}
-                                        href="#"
+                                        key={l.label}
+                                        href={l.href}
+                                        onClick={(e) => {
+                                            if (l.href === "#") {
+                                                e.preventDefault();
+                                                alert(`Kebijakan ${l.label} MataCeria sedang dimutakhirkan.`);
+                                            }
+                                        }}
                                         style={{
                                             fontFamily: MONTSERRAT,
                                             fontSize: "0.8125rem",
@@ -452,7 +458,7 @@ export default function WelcomeApp({
                                             (e.target.style.color = "#64748b")
                                         }
                                     >
-                                        {l}
+                                        {l.label}
                                     </a>
                                 ))}
                             </div>

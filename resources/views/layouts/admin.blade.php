@@ -987,9 +987,28 @@
                 margin-left: 0;
             }
         }
+
+        /* Mobile Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(30, 41, 56, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 95;
+            opacity: 0;
+            transition: opacity var(--duration-normal) var(--ease-out);
+        }
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
+    <!-- ============ SIDEBAR OVERLAY ============ -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="document.getElementById('sidebar').classList.remove('open'); this.classList.remove('active');"></div>
+
     <!-- ============ SIDEBAR ============ -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -1098,7 +1117,7 @@
         <header class="top-header">
             <div class="header-left">
                 <!-- Mobile menu toggle -->
-                <button class="header-icon-btn" id="menuToggle" style="display: none;" onclick="document.getElementById('sidebar').classList.toggle('open')">
+                <button class="header-icon-btn" id="menuToggle" style="display: none;" onclick="document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('active')">
                     <i class="ti ti-menu-2"></i>
                 </button>
                 
@@ -1143,7 +1162,12 @@
         
         window.addEventListener('resize', () => {
             if (menuToggle) {
-                menuToggle.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+                const isMobile = window.innerWidth <= 768;
+                menuToggle.style.display = isMobile ? 'flex' : 'none';
+                if (!isMobile) {
+                    document.getElementById('sidebar').classList.remove('open');
+                    document.getElementById('sidebarOverlay').classList.remove('active');
+                }
             }
         });
     </script>

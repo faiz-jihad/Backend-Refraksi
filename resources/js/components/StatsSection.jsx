@@ -27,7 +27,7 @@ export default function StatsSection({ statsPatients, statsDoctors, statsAccurac
                     </h2>
                 </motion.div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     {STATS.map((stat, idx) => (
                         <motion.div
                             key={idx}

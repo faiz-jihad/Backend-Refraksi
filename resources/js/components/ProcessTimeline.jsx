@@ -82,15 +82,14 @@ export default function ProcessTimeline() {
 
                 {/* Connecting line */}
                 <div style={{ position: 'relative' }}>
-                    <div style={{ display: 'none' }} className="hidden lg:block">
-                        {/* Line placeholder rendered below */}
-                    </div>
                     {/* Horizontal gradient line behind steps (desktop) */}
-                    <div style={{
-                        position: 'absolute', top: '52px', left: '12.5%', right: '12.5%', height: '2px',
-                        background: '#E7E5E4', boxShadow: NM_IN_SM, borderRadius: '1px',
-                        display: 'block'
-                    }}>
+                    <div
+                        className="hidden lg:block"
+                        style={{
+                            position: 'absolute', top: '52px', left: '12.5%', right: '12.5%', height: '2px',
+                            background: '#E7E5E4', boxShadow: NM_IN_SM, borderRadius: '1px'
+                        }}
+                    >
                         <motion.div
                             initial={{ scaleX: 0 }} animate={inView ? { scaleX: 1 } : {}}
                             transition={{ duration: 1.5, ease: 'easeInOut', delay: 0.3 }}
@@ -98,7 +97,7 @@ export default function ProcessTimeline() {
                         />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem' }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {STEPS.map((step, idx) => (
                             <motion.div
                                 key={step.num}

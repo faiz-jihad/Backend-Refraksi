@@ -85,3 +85,14 @@ Route::get('/setup/ready', function() {
         return "Setup Error: " . $e->getMessage();
     }
 });
+
+// Direct APK download route linking to compiled Flutter APK
+Route::get('/downloads/mataceria.apk', function() {
+    $path = 'd:/Portofolio Web/skin_detection_flutter/build/app/outputs/flutter-apk/app-release.apk';
+    if (file_exists($path)) {
+        return response()->download($path, 'mataceria.apk', [
+            'Content-Type' => 'application/vnd.android.package-archive',
+        ]);
+    }
+    abort(404, 'File APK MataCeria belum dikompilasi. Jalankan kompilasi Flutter terlebih dahulu.');
+})->name('download.apk');

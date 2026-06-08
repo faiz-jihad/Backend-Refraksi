@@ -7,11 +7,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- SEO -->
-    <title>MataCeria — AI Eye Health Platform Indonesia #1</title>
-    <meta name="description" content="Platform kesehatan mata berbasis AI terdepan di Indonesia. Deteksi dini penyakit mata, tes refraksi digital, dan konsultasi dokter spesialis mata dalam satu ekosistem.">
-    <meta name="keywords" content="kesehatan mata, AI kesehatan, deteksi glaukoma, tes refraksi, telemedicine mata, optik online">
-    <meta property="og:title" content="MataCeria — AI Eye Health Platform Indonesia">
-    <meta property="og:description" content="Teknologi AI untuk melindungi penglihatan Anda. Deteksi dini, akurat, dan terpercaya.">
+    <title>MataCeria — Platform Kesehatan Mata Digital Indonesia #1</title>
+    <meta name="description" content="Platform kesehatan mata berbasis screening digital terdepan di Indonesia. Deteksi dini penyakit mata, tes refraksi digital, dan konsultasi dokter spesialis mata dalam satu ekosistem.">
+    <meta name="keywords" content="kesehatan mata, screening digital, deteksi glaukoma, tes refraksi, telemedicine mata, optik online">
+    <meta property="og:title" content="MataCeria — Digital Eye Health Platform Indonesia">
+    <meta property="og:description" content="Teknologi screening digital untuk melindungi penglihatan Anda. Deteksi dini, akurat, dan terpercaya.">
     <meta property="og:type" content="website">
 
     <!-- Google Fonts -->

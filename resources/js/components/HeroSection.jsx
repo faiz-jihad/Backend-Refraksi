@@ -9,6 +9,168 @@ const NM_IN_SM = 'inset 3px 3px 6px #b5b3b2, inset -3px -3px 6px #ffffff';
 
 const MONTSERRAT = "'Montserrat', sans-serif";
 
+function InteractiveDashboard() {
+    const [stableDistance, setStableDistance] = useState(35);
+    const [lightLevel, setLightLevel] = useState(94);
+    
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setStableDistance(p => {
+                const delta = (Math.random() - 0.5) * 2;
+                const next = Math.round(p + delta);
+                return next >= 33 && next <= 37 ? next : p;
+            });
+            setLightLevel(p => {
+                const delta = (Math.random() - 0.5) * 4;
+                const next = Math.round(p + delta);
+                return next >= 90 && next <= 98 ? next : p;
+            });
+        }, 1500);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div style={{
+            width: '100%',
+            height: '500px',
+            background: '#E7E5E4',
+            borderRadius: '24px',
+            padding: '20px',
+            boxShadow: NM_OUT_LG,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            position: 'relative',
+            overflow: 'hidden',
+        }}>
+            {/* Header info */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00A63D', animation: 'pulse 1.5s infinite' }} />
+                    <span style={{ fontFamily: MONTSERRAT, fontSize: '10px', fontWeight: 700, color: '#006666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Diagnostics Unit Active
+                    </span>
+                </div>
+                <span style={{ fontFamily: MONTSERRAT, fontSize: '9px', fontWeight: 600, color: '#94a3b8' }}>v2.5.0-Stable</span>
+            </div>
+
+            {/* Simulated Retina Scan Viewport */}
+            <div style={{
+                flex: 1,
+                minHeight: 0,
+                borderRadius: '16px',
+                background: '#E7E5E4',
+                boxShadow: NM_IN_SM,
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                {/* Scanner Grid Lines */}
+                <div style={{
+                    position: 'absolute',
+                    inset: '10px',
+                    border: '1px dashed rgba(0, 102, 102, 0.15)',
+                    borderRadius: '12px',
+                    pointerEvents: 'none'
+                }} />
+                
+                {/* Crosshair */}
+                <svg width="100%" height="100%" style={{ position: 'absolute', pointerEvents: 'none' }}>
+                    <line x1="50%" y1="10%" x2="50%" y2="90%" stroke="rgba(0, 102, 102, 0.08)" strokeDasharray="4 4" />
+                    <line x1="10%" y1="50%" x2="90%" y2="50%" stroke="rgba(0, 102, 102, 0.08)" strokeDasharray="4 4" />
+                    <circle cx="50%" cy="50%" r="40" fill="none" stroke="rgba(0, 102, 102, 0.12)" strokeWidth="1" />
+                    <circle cx="50%" cy="50%" r="80" fill="none" stroke="rgba(0, 102, 102, 0.08)" strokeWidth="1" />
+                </svg>
+
+                {/* Animated Eye Scan Graphic */}
+                <div style={{ position: 'relative', width: '120px', height: '120px', display: 'flex', alignItems: 'center', justifyItems: 'center' }}>
+                    {/* Outer pulsing ring */}
+                    <motion.div
+                        animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.6, 0.3] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            borderRadius: '50%',
+                            border: '2px solid #006666',
+                        }}
+                    />
+                    {/* Inner eye lens container */}
+                    <div style={{
+                        position: 'absolute',
+                        inset: '16px',
+                        borderRadius: '50%',
+                        background: '#E7E5E4',
+                        boxShadow: NM_OUT_SM,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#006666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" fill="#006666" fillOpacity="0.2" />
+                        </svg>
+                    </div>
+
+                    {/* Scanning Laser Bar */}
+                    <motion.div
+                        animate={{ top: ['0%', '100%', '0%'] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                        style={{
+                            position: 'absolute',
+                            left: '-10px',
+                            right: '-10px',
+                            height: '2px',
+                            background: '#00A63D',
+                            boxShadow: '0 0 8px #00A63D',
+                            zIndex: 2,
+                            opacity: 0.8
+                        }}
+                    />
+                </div>
+
+                {/* Calibration Status Text overlays */}
+                <div style={{ position: 'absolute', top: '16px', left: '16px', fontFamily: MONTSERRAT, fontSize: '8px', color: '#64748b' }}>
+                    <div style={{ fontWeight: 700, color: '#1E2938' }}>ALIGNMENT: LOCK</div>
+                    <div>X: +0.024 | Y: -0.012</div>
+                </div>
+
+                <div style={{ position: 'absolute', bottom: '16px', right: '16px', fontFamily: MONTSERRAT, fontSize: '8px', color: '#64748b', textAlign: 'right' }}>
+                    <div style={{ fontWeight: 700, color: '#006666' }}>STABLE_DISTANCE</div>
+                    <div>{stableDistance} cm [OK]</div>
+                </div>
+            </div>
+
+            {/* Metrics Dashboard Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                <div style={{ padding: '10px', borderRadius: '12px', boxShadow: NM_IN_SM }}>
+                    <div style={{ fontFamily: MONTSERRAT, fontSize: '7px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SPHERICAL (SPH)</div>
+                    <div style={{ fontFamily: MONTSERRAT, fontWeight: 700, fontSize: '13px', color: '#006666', marginTop: '2px' }}>-1.50 OD</div>
+                    <div style={{ fontFamily: MONTSERRAT, fontSize: '7px', color: '#64748b', marginTop: '1px' }}>-1.75 OS</div>
+                </div>
+                <div style={{ padding: '10px', borderRadius: '12px', boxShadow: NM_IN_SM }}>
+                    <div style={{ fontFamily: MONTSERRAT, fontSize: '7px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CYLINDER (CYL)</div>
+                    <div style={{ fontFamily: MONTSERRAT, fontWeight: 700, fontSize: '13px', color: '#004d4d', marginTop: '2px' }}>-0.25 OD</div>
+                    <div style={{ fontFamily: MONTSERRAT, fontSize: '7px', color: '#64748b', marginTop: '1px' }}>-0.50 OS</div>
+                </div>
+                <div style={{ padding: '10px', borderRadius: '12px', boxShadow: NM_IN_SM }}>
+                    <div style={{ fontFamily: MONTSERRAT, fontSize: '7px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>LIGHT QUALITY</div>
+                    <div style={{ fontFamily: MONTSERRAT, fontWeight: 700, fontSize: '13px', color: '#00A63D', marginTop: '2px' }}>{lightLevel}%</div>
+                    <div style={{ fontFamily: MONTSERRAT, fontSize: '7px', color: '#64748b', marginTop: '1px' }}>Optimal Range</div>
+                </div>
+            </div>
+            
+            {/* Acuity Status */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', boxShadow: NM_OUT_SM }}>
+                <span style={{ fontFamily: MONTSERRAT, fontSize: '9px', fontWeight: 700, color: '#1E2938' }}>Estimated Visual Acuity</span>
+                <span style={{ fontFamily: MONTSERRAT, fontSize: '11px', fontWeight: 800, color: '#006666' }}>20/20 Snellen (Equivalent)</span>
+            </div>
+        </div>
+    );
+}
+
 export default function HeroSection({ loginRoute, adminRoute, isAuthenticated }) {
     const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
     const [typedText, setTypedText] = useState('');
@@ -111,7 +273,8 @@ export default function HeroSection({ loginRoute, adminRoute, isAuthenticated })
                                 Mulai Screening Gratis
                             </motion.a>
 
-                            <motion.button
+                            <motion.a
+                                href="#fitur"
                                 whileHover={{ boxShadow: NM_OUT_SM }}
                                 whileTap={{ boxShadow: NM_IN_SM }}
                                 style={{
@@ -119,7 +282,7 @@ export default function HeroSection({ loginRoute, adminRoute, isAuthenticated })
                                     padding: '0.875rem 1.75rem',
                                     background: '#E7E5E4', color: '#334155',
                                     fontFamily: MONTSERRAT, fontSize: '0.875rem', fontWeight: 700,
-                                    borderRadius: '8px', border: 'none', cursor: 'pointer',
+                                    borderRadius: '8px', textDecoration: 'none',
                                     boxShadow: NM_OUT_SM,
                                     transition: 'all 120ms cubic-bezier(0.25, 0, 0, 1)'
                                 }}
@@ -128,7 +291,7 @@ export default function HeroSection({ loginRoute, adminRoute, isAuthenticated })
                                     <path d="M8 5v14l11-7z"/>
                                 </svg>
                                 Lihat Demo
-                            </motion.button>
+                            </motion.a>
                         </motion.div>
 
                         {/* Trust row */}
@@ -179,16 +342,7 @@ export default function HeroSection({ loginRoute, adminRoute, isAuthenticated })
                         transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
                         className="relative hidden lg:block"
                     >
-                        <div className="relative rounded-3xl overflow-hidden flex items-center justify-center"
-                             style={{ height: '500px', background: '#ffffff', boxShadow: NM_OUT_LG }}>
-                            <div style={{ textAlign: 'center', color: '#64748b' }}>
-                                <svg width="64" height="64" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24" style={{ margin: '0 auto 16px' }}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                <span style={{ fontFamily: MONTSERRAT, fontWeight: 600, fontSize: '1rem' }}>Sistem Refraksi Digital</span>
-                            </div>
-                        </div>
+                        <InteractiveDashboard />
                     </motion.div>
                 </div>
             </div>

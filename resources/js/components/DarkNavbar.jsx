@@ -33,7 +33,7 @@ export default function NavBar({ loginRoute, adminRoute, isAuthenticated, scroll
                     <div className="flex justify-between items-center h-16">
 
                         {/* Logo */}
-                        <a href="#" className="flex items-center gap-2.5" style={{ textDecoration: 'none' }}>
+                        <a href="/" className="flex items-center gap-2.5" style={{ textDecoration: 'none' }}>
                             <motion.div
                                 whileHover={{ boxShadow: NM_IN_SM }}
                                 className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-150"

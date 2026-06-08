@@ -70,7 +70,7 @@ function ProgressBar({ label, value, color }) {
 
 const CARDS = [
     {
-        id: 'ai', title: 'Digital Inference Engine', subtitle: '50K+ ophthalmologic datasets',
+        id: 'ai', title: 'Digital Diagnostic Engine', subtitle: '50K+ ophthalmologic datasets',
         icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#006666" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -148,7 +148,7 @@ export default function BentoFeatures({ doctors = [] }) {
                     <NeuralMini />
                 </div>
                 <div style={{ fontFamily: MONTSERRAT, fontSize: '8px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#006666', marginBottom: '8px', fontWeight: 700 }}>
-                    Live Confidence — {aiScore}%
+                    Engine Accuracy — {aiScore}%
                 </div>
                 <ProgressBar label="Retina Analysis" value={98} color="#006666" />
                 <ProgressBar label="Refraction Score" value={96} color="#004d4d" />
@@ -255,7 +255,7 @@ export default function BentoFeatures({ doctors = [] }) {
 
             {/* Bento Grid */}
             <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1.5rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', gridAutoRows: '200px' }}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[250px] md:auto-rows-[200px]">
                     {CARDS.map((card, idx) => {
                         const isHovered = hovered === card.id;
                         return (
@@ -267,17 +267,14 @@ export default function BentoFeatures({ doctors = [] }) {
                                 transition={{ duration: 0.5, delay: idx * 0.07 }}
                                 onMouseEnter={() => setHovered(card.id)}
                                 onMouseLeave={() => setHovered(null)}
+                                className={`flex flex-col rounded-[16px] p-6 cursor-default overflow-hidden transition-all duration-200 ${
+                                    card.colSpan === 2 ? 'col-span-1 md:col-span-2' : 'col-span-1'
+                                } ${
+                                    card.rowSpan === 2 ? 'row-span-1 md:row-span-2' : 'row-span-1'
+                                }`}
                                 style={{
-                                    gridColumn: card.colSpan === 2 ? 'span 2' : 'span 1',
-                                    gridRow: card.rowSpan === 2 ? 'span 2' : 'span 1',
                                     background: '#E7E5E4',
-                                    borderRadius: '16px',
-                                    padding: '1.5rem',
-                                    display: 'flex', flexDirection: 'column',
                                     boxShadow: isHovered ? NM_IN_MD : NM_OUT_MD,
-                                    transition: 'box-shadow 200ms cubic-bezier(0.25, 0, 0, 1)',
-                                    cursor: 'default',
-                                    overflow: 'hidden',
                                 }}
                             >
                                 {/* Card header */}
