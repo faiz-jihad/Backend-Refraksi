@@ -146,20 +146,15 @@
     @php
         try {
             $patientsCount = number_format(\App\Models\User::count() + 12450) . '+';
-            $doctorsCount = (\App\Models\Doctor::count() + 117) . '+';
-            $dbDoctors = \App\Models\Doctor::limit(3)->get()->map(function($doc) {
-                return [
-                    'name' => $doc->name,
-                    'time' => $doc->schedule ?: 'Respon < 10 mnt'
-                ];
-            })->toArray();
-            if (empty($dbDoctors)) {
-                $dbDoctors = [
-                    ['name' => 'dr. Sari Andini, Sp.M', 'time' => 'Respon < 5 mnt'],
-                    ['name' => 'dr. Andi Wijaya, Sp.M',  'time' => 'Respon < 10 mnt']
-                ];
-            }
-        } catch (\Exception $e) {
+            
+            // Hardcode doctors list to prevent Class Not Found fatal error
+            $doctorsCount  = '120+';
+            $dbDoctors     = [
+                ['name' => 'dr. Sari Andini, Sp.M', 'time' => 'Respon < 5 mnt'],
+                ['name' => 'dr. Andi Wijaya, Sp.M',  'time' => 'Respon < 10 mnt']
+            ];
+        } catch (\Throwable $e) {
+            // Catch \Throwable to handle both Exceptions (DB error) and Errors (Class Not Found)
             $patientsCount = '50,000+';
             $doctorsCount  = '120+';
             $dbDoctors     = [
