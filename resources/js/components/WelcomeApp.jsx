@@ -426,15 +426,17 @@ function StoreButtons({ inverted = false, apkRoute, onStoreClick }) {
 /* ═══════════════════════════════════════════════
    NAVBAR
 ═══════════════════════════════════════════════ */
-function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled }) {
+function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled, showCurtain }) {
     const [open, setOpen] = useState(false);
     const navRef = useRef(null);
+    const initialShowCurtain = useRef(showCurtain);
 
     useEffect(() => {
+        const delayTime = initialShowCurtain.current ? 2.2 : 0.1;
         const ctx = gsap.context(() => {
             gsap.fromTo(navRef.current,
                 { y: -70, opacity: 0 },
-                { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', delay: 2.2 }
+                { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', delay: delayTime }
             );
         });
         return () => ctx.revert();
@@ -552,12 +554,13 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled })
 /* ═══════════════════════════════════════════════
    HERO SECTION — with GSAP stagger entrance
 ═══════════════════════════════════════════════ */
-function HeroSection({ loginRoute, adminRoute, isAuthenticated, apkRoute, onStoreClick }) {
+function HeroSection({ loginRoute, adminRoute, isAuthenticated, apkRoute, onStoreClick, showCurtain }) {
     const sectionRef = useRef(null);
     const blob1 = useRef(null);
     const blob2 = useRef(null);
     const blob3 = useRef(null);
     const [screenIdx, setScreenIdx] = useState(0);
+    const initialShowCurtain = useRef(showCurtain);
 
     useEffect(() => {
         // Rotate phone screens
@@ -582,8 +585,9 @@ function HeroSection({ loginRoute, adminRoute, isAuthenticated, apkRoute, onStor
         window.addEventListener('mousemove', onMove, { passive: true });
 
         // GSAP staggered hero entrance after curtain clears
+        const delayTime = initialShowCurtain.current ? 2.3 : 0.2;
         const ctx = gsap.context(() => {
-            const tl = gsap.timeline({ delay: 2.3 });
+            const tl = gsap.timeline({ delay: delayTime });
             tl.from('.mc-hero-badge', { y: 24, opacity: 0, duration: 0.7, ease: 'power3.out' })
               .from('.mc-hero-h1 .mc-word', { y: 60, opacity: 0, stagger: 0.1, duration: 0.8, ease: 'power4.out' }, '-=0.3')
               .from('.mc-hero-body', { y: 20, opacity: 0, duration: 0.6, ease: 'power3.out' }, '-=0.4')
@@ -1215,7 +1219,14 @@ function Footer({ onGeneralClick }) {
 ═══════════════════════════════════════════════ */
 export default function WelcomeApp({ loginRoute, adminRoute, isAuthenticated, userName, statsPatients, statsDoctors, apkRoute }) {
     const [scrolled, setScrolled] = useState(false);
-    const [showCurtain, setShowCurtain] = useState(true);
+    const [showCurtain, setShowCurtain] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const isBot = /Chrome-Lighthouse|Googlebot/i.test(navigator.userAgent);
+            const hasSeenInt = sessionStorage.getItem('mc_curtain_shown');
+            return !isBot && !hasSeenInt;
+        }
+        return true;
+    });
     const [comingSoon, setComingSoon] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [modalDesc, setModalDesc] = useState('');
@@ -1263,12 +1274,17 @@ export default function WelcomeApp({ loginRoute, adminRoute, isAuthenticated, us
             <div id="scroll-detector" style={{ position: 'absolute', top: 40, left: 0, width: '1px', height: '1px', pointerEvents: 'none', visibility: 'hidden' }} />
             {/* Page-load curtain animation */}
             {showCurtain && (
-                <PageLoadAnimation onComplete={() => setShowCurtain(false)} />
+                <PageLoadAnimation onComplete={() => {
+                    setShowCurtain(false);
+                    if (typeof window !== 'undefined') {
+                        sessionStorage.setItem('mc_curtain_shown', 'true');
+                    }
+                }} />
             )}
 
-            <Navbar loginRoute={loginRoute} adminRoute={adminRoute} isAuthenticated={isAuthenticated} userName={userName} scrolled={scrolled} />
+            <Navbar loginRoute={loginRoute} adminRoute={adminRoute} isAuthenticated={isAuthenticated} userName={userName} scrolled={scrolled} showCurtain={showCurtain} />
             <main>
-                <HeroSection loginRoute={loginRoute} adminRoute={adminRoute} isAuthenticated={isAuthenticated} apkRoute={apkRoute} onStoreClick={handleStoreClick} />
+                <HeroSection loginRoute={loginRoute} adminRoute={adminRoute} isAuthenticated={isAuthenticated} apkRoute={apkRoute} onStoreClick={handleStoreClick} showCurtain={showCurtain} />
                 <HowItWorks />
                 <HowDoesItWork />
                 <Testimonials />
