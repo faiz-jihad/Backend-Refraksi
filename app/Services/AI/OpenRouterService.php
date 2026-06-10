@@ -231,7 +231,6 @@ class OpenRouterService
                     'messages'    => $messages,
                     'temperature' => 0.2,      // Low temperature for consistent JSON
                     'max_tokens'  => 1500,
-                    'response_format' => ['type' => 'json_object'], // OpenRouter supports this for some models
                 ];
 
                 Log::info("OpenRouter structured request attempt", ['model' => $currentModel]);
