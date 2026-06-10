@@ -128,6 +128,12 @@ export const T_DICT = {
         footer_quick: 'Quick Links',
         footer_about: 'About Us',
         footer_contacts: 'Contacts',
+        footer_policy: 'Kebijakan Privasi',
+        footer_terms: 'Syarat & Ketentuan',
+        footer_team: 'Tim Kami',
+        footer_story: 'Kisah Kami',
+        footer_blog: 'Blog',
+        footer_careers: 'Karir',
         
         modal_soon: 'Segera Hadir',
         modal_android: 'Pengguna Android?',
@@ -238,6 +244,12 @@ export const T_DICT = {
         footer_quick: 'Quick Links',
         footer_about: 'About Us',
         footer_contacts: 'Contacts',
+        footer_policy: 'Privacy Policy',
+        footer_terms: 'Terms & Conditions',
+        footer_team: 'Our Team',
+        footer_story: 'Our Story',
+        footer_blog: 'Blog',
+        footer_careers: 'Careers',
         
         modal_soon: 'Coming Soon',
         modal_android: 'Android User?',
@@ -348,6 +360,12 @@ export const T_DICT = {
         footer_quick: 'クイックリンク',
         footer_about: '運営会社',
         footer_contacts: 'お問い合わせ',
+        footer_policy: 'プライバシーポリシー',
+        footer_terms: '利用規約',
+        footer_team: 'チーム紹介',
+        footer_story: '私たちのストーリー',
+        footer_blog: 'ブログ',
+        footer_careers: '採用情報',
         
         modal_soon: '近日公開',
         modal_android: 'Androidをご利用ですか？',
@@ -458,6 +476,12 @@ export const T_DICT = {
         footer_quick: 'Enlaces Rápidos',
         footer_about: 'Nosotros',
         footer_contacts: 'Contactos',
+        footer_policy: 'Política de Privacidad',
+        footer_terms: 'Términos y Condiciones',
+        footer_team: 'Nuestro Equipo',
+        footer_story: 'Nuestra Historia',
+        footer_blog: 'Blog',
+        footer_careers: 'Carreras',
         
         modal_soon: 'Próximamente',
         modal_android: '¿Usuario de Android?',
@@ -568,6 +592,12 @@ export const T_DICT = {
         footer_quick: '快速链接',
         footer_about: '关于我们',
         footer_contacts: '联系我们',
+        footer_policy: '隐私政策',
+        footer_terms: '服务条款',
+        footer_team: '关于团队',
+        footer_story: '品牌故事',
+        footer_blog: '博客专栏',
+        footer_careers: '加入我们',
         
         modal_soon: '即将推出',
         modal_android: 'Android 用户？',
@@ -1003,6 +1033,14 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled, s
     const [langDropdownOpen, setLangDropdownOpen] = useState(false);
     const navRef = useRef(null);
     const initialShowCurtain = useRef(showCurtain);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        handleResize();
+        window.addEventListener('resize', handleResize, { passive: true });
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const delayTime = initialShowCurtain.current ? 2.2 : 0.1;
@@ -1063,7 +1101,7 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled, s
                         </span>
                     </a>
 
-                    <nav style={{ display: 'flex', gap: 2 }} className="mc-nav-desktop">
+                    <nav style={{ display: isMobile ? 'none' : 'flex', gap: 2 }} className="mc-nav-desktop">
                         {links.map(l => (
                             <a key={l.label} href={l.href} style={{ padding: '7px 14px', borderRadius: 8, fontSize: '0.875rem', fontWeight: 500, color: T.text2, textDecoration: 'none', transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}
                                onMouseEnter={e => { e.currentTarget.style.color = T.brand; e.currentTarget.style.background = T.gradSoft; e.currentTarget.style.transform = 'translateY(-1px)'; }}
@@ -1074,64 +1112,66 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled, s
                     </nav>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        {/* Premium Glassmorphic Language Selector Dropdown */}
-                        <div style={{ position: 'relative' }} className="mc-lang-selector">
-                            <button onClick={() => setLangDropdownOpen(v => !v)} style={{
-                                display: 'flex', alignItems: 'center', gap: 6,
-                                padding: '6px 12px', borderRadius: 8,
-                                border: `1.5px solid ${T.border}`, background: 'rgba(255,255,255,0.4)',
-                                cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, color: T.text2,
-                                transition: 'all 0.2s'
-                            }}>
-                                <span>{currentLang.flag}</span>
-                                <span style={{ textTransform: 'uppercase' }}>{currentLang.code}</span>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ transform: langDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                                    <path d="M6 9l6 6 6-6"/>
-                                </svg>
-                            </button>
-                            <AnimatePresence>
-                                {langDropdownOpen && (
-                                    <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.15 }}
-                                        style={{
-                                            position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                                            background: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(20px)',
-                                            border: `1.5px solid ${T.borderM}`, borderRadius: 12,
-                                            padding: 6, zIndex: 1100, display: 'flex', flexDirection: 'column', gap: 2,
-                                            boxShadow: '0 10px 25px rgba(22,163,74,0.12)', minWidth: 120
-                                        }}>
-                                        {languages.map(l => (
-                                            <button key={l.code} onClick={() => { setLang(l.code); setLangDropdownOpen(false); }} style={{
-                                                display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                                                padding: '8px 12px', borderRadius: 8, border: 'none',
-                                                background: lang === l.code ? T.gradSoft : 'transparent',
-                                                color: lang === l.code ? T.brand : T.text2,
-                                                cursor: 'pointer', fontSize: '0.78rem', fontWeight: lang === l.code ? 700 : 500,
-                                                textAlign: 'left', transition: 'all 0.15s'
-                                            }}
-                                            onMouseEnter={e => { if(lang !== l.code) e.currentTarget.style.background = 'rgba(22,163,74,0.05)'; }}
-                                            onMouseLeave={e => { if(lang !== l.code) e.currentTarget.style.background = 'transparent'; }}>
-                                                <span>{l.flag}</span>
-                                                <span>{l.label}</span>
-                                            </button>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
+                        <div className="mc-nav-cta-desktop" style={{ display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 10 }}>
+                            {/* Premium Glassmorphic Language Selector Dropdown */}
+                            <div style={{ position: 'relative' }} className="mc-lang-selector">
+                                <button onClick={() => setLangDropdownOpen(v => !v)} style={{
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                    padding: '6px 12px', borderRadius: 8,
+                                    border: `1.5px solid ${T.border}`, background: 'rgba(255,255,255,0.4)',
+                                    cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, color: T.text2,
+                                    transition: 'all 0.2s'
+                                }}>
+                                    <span>{currentLang.flag}</span>
+                                    <span style={{ textTransform: 'uppercase' }}>{currentLang.code}</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ transform: langDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                                        <path d="M6 9l6 6 6-6"/>
+                                    </svg>
+                                </button>
+                                <AnimatePresence>
+                                    {langDropdownOpen && (
+                                        <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.15 }}
+                                            style={{
+                                                position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                                                background: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(20px)',
+                                                border: `1.5px solid ${T.borderM}`, borderRadius: 12,
+                                                padding: 6, zIndex: 1100, display: 'flex', flexDirection: 'column', gap: 2,
+                                                boxShadow: '0 10px 25px rgba(22,163,74,0.12)', minWidth: 120
+                                            }}>
+                                            {languages.map(l => (
+                                                <button key={l.code} onClick={() => { setLang(l.code); setLangDropdownOpen(false); }} style={{
+                                                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                                                    padding: '8px 12px', borderRadius: 8, border: 'none',
+                                                    background: lang === l.code ? T.gradSoft : 'transparent',
+                                                    color: lang === l.code ? T.brand : T.text2,
+                                                    cursor: 'pointer', fontSize: '0.78rem', fontWeight: lang === l.code ? 700 : 500,
+                                                    textAlign: 'left', transition: 'all 0.15s'
+                                                }}
+                                                onMouseEnter={e => { if(lang !== l.code) e.currentTarget.style.background = 'rgba(22,163,74,0.05)'; }}
+                                                onMouseLeave={e => { if(lang !== l.code) e.currentTarget.style.background = 'transparent'; }}>
+                                                    <span>{l.flag}</span>
+                                                    <span>{l.label}</span>
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
 
-                        {isAuthenticated ? (
-                            <>
-                                <span style={{ fontSize: '0.8rem', color: T.text2 }}>{t('nav_hello')}, {userName}</span>
-                                <a href={adminRoute} style={{ padding: '8px 18px', borderRadius: 10, background: T.grad, color: '#fff', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none', boxShadow: '0 4px 14px rgba(22,163,74,0.3)' }}>{t('nav_dashboard')} →</a>
-                            </>
-                        ) : (
-                            <a href={loginRoute} style={{ padding: '8px 18px', borderRadius: 10, background: T.grad, color: '#fff', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none', boxShadow: '0 4px 14px rgba(22,163,74,0.3)', transition: 'all 0.2s' }}
-                               onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 22px rgba(22,163,74,0.45)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                               onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(22,163,74,0.3)'; e.currentTarget.style.transform = 'none'; }}>
-                                {t('nav_login')}
-                            </a>
-                        )}
-                        <button onClick={() => setOpen(v => !v)} aria-label="Buka menu navigasi" className="mc-nav-mobile-btn" style={{ display: 'none', padding: '8px', borderRadius: 8, border: `1.5px solid ${T.border}`, background: 'transparent', cursor: 'pointer' }}>
+                            {isAuthenticated ? (
+                                <>
+                                    <span style={{ fontSize: '0.8rem', color: T.text2 }}>{t('nav_hello')}, {userName}</span>
+                                    <a href={adminRoute} style={{ padding: '8px 18px', borderRadius: 10, background: T.grad, color: '#fff', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none', boxShadow: '0 4px 14px rgba(22,163,74,0.3)' }}>{t('nav_dashboard')} →</a>
+                                </>
+                            ) : (
+                                <a href={loginRoute} style={{ padding: '8px 18px', borderRadius: 10, background: T.grad, color: '#fff', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none', boxShadow: '0 4px 14px rgba(22,163,74,0.3)', transition: 'all 0.2s' }}
+                                   onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 22px rgba(22,163,74,0.45)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                                   onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(22,163,74,0.3)'; e.currentTarget.style.transform = 'none'; }}>
+                                    {t('nav_login')}
+                                </a>
+                            )}
+                        </div>
+                        <button onClick={() => setOpen(v => !v)} aria-label="Buka menu navigasi" className="mc-nav-mobile-btn" style={{ display: isMobile ? 'flex' : 'none', padding: '8px', borderRadius: 8, border: `1.5px solid ${T.border}`, background: 'transparent', cursor: 'pointer' }}>
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={T.text} strokeWidth="2">
                                 {open ? <path d="M18 6L6 18M6 6l12 12"/> : <path d="M3 12h18M3 6h18M3 18h18"/>}
                             </svg>
@@ -2132,6 +2172,7 @@ export default function WelcomeApp({ loginRoute, adminRoute, isAuthenticated, us
                     
                     @media (max-width: 768px) {
                         .mc-nav-desktop    { display: none !important; }
+                        .mc-nav-cta-desktop { display: none !important; }
                         .mc-nav-mobile-btn { display: flex !important; }
                         .mc-footer-grid    { grid-template-columns: 1fr !important; }
                         .mc-cta-grid {
