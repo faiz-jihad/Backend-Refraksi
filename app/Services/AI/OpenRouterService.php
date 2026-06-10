@@ -275,33 +275,177 @@ PROMPT;
 
     /**
      * Parse JSON response similar to GeminiService.
+     * Tidak pernah throw exception — selalu kembalikan array valid.
      */
     private function parseJsonResponse(string $raw): array
     {
+        Log::info('OpenRouter Raw Response:', [
+            'length'  => strlen($raw),
+            'preview' => mb_substr($raw, 0, 500),
+        ]);
+
+        if (empty(trim($raw))) {
+            Log::warning('OpenRouter returned completely empty response');
+            return $this->buildFallbackResponse('Normal', 'AI tidak memberikan analisis. Silakan coba lagi.');
+        }
+
         $decoded = json_decode(trim($raw), true);
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
-            return [
-                'predicted_class' => 'Normal',
-                'confidence' => 0.5,
-                'recommendation' => 'Gagal mem-parse respons dari OpenRouter.',
-            ];
+            Log::warning('OpenRouter JSON Parse failed for main payload: ' . json_last_error_msg());
+            return $this->buildFallbackResponse('Normal', 'Gagal mem-parse respons utama dari OpenRouter.');
         }
         
         $content = $decoded['choices'][0]['message']['content'] ?? '';
-        
-        // Remove markdown code blocks if present
-        $content = preg_replace('/```json\s*|```/', '', $content);
-        
+        if (empty(trim($content))) {
+            return $this->buildFallbackResponse('Normal', 'Konten respons OpenRouter kosong.');
+        }
+
+        // Strategy 1: Content is already pure JSON
         $result = json_decode(trim($content), true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($result)) {
             return $result;
         }
-        
-        // Fallback if content is not JSON
+
+        // Strategy 2: Extract JSON from various formats (markdown, mixed text)
+        $extracted = $this->extractJsonFromResponse($content);
+        $result = json_decode($extracted, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($result)) {
+            return $result;
+        }
+
+        // Strategy 3: Sanitize and try again
+        $sanitized = $this->sanitizeJsonString($extracted);
+        $result = json_decode($sanitized, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($result)) {
+            return $result;
+        }
+
+        // Strategy 4: Build structured response from raw text (graceful degradation)
+        Log::warning('OpenRouter JSON Parse failed after all strategies — using text-based fallback', [
+            'json_error' => json_last_error_msg(),
+            'raw_content'=> mb_substr($content, 0, 800),
+        ]);
+
+        return $this->buildTextFallbackResponse($content);
+    }
+
+    /**
+     * Extract JSON from various response formats (markdown, mixed text, etc).
+     */
+    private function extractJsonFromResponse(string $raw): string
+    {
+        $raw = trim($raw);
+
+        // Remove BOM and invisible control characters
+        $raw = preg_replace('/^[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\xEF\xBB\xBF]+/', '', $raw);
+
+        // Pattern 1: ```json ... ``` with possible newlines
+        if (preg_match('/```json\s*([\s\S]*?)\s*```/i', $raw, $m) && !empty(trim($m[1]))) {
+            return trim($m[1]);
+        }
+
+        // Pattern 2: ``` ... ``` (plain code block)
+        if (preg_match('/```\s*([\s\S]*?)\s*```/', $raw, $m) && !empty(trim($m[1]))) {
+            $inner = trim($m[1]);
+            if (str_starts_with($inner, '{') || str_starts_with($inner, '[')) {
+                return $inner;
+            }
+        }
+
+        // Pattern 3: Find the outermost balanced { ... } block
+        $startPos = strpos($raw, '{');
+        if ($startPos !== false) {
+            $depth   = 0;
+            $inStr   = false;
+            $escape  = false;
+            $len     = strlen($raw);
+            $endPos  = -1;
+
+            for ($i = $startPos; $i < $len; $i++) {
+                $ch = $raw[$i];
+
+                if ($escape) { $escape = false; continue; }
+                if ($ch === '\\' && $inStr) { $escape = true; continue; }
+                if ($ch === '"') { $inStr = !$inStr; continue; }
+                if ($inStr) continue;
+
+                if ($ch === '{') $depth++;
+                elseif ($ch === '}') {
+                    $depth--;
+                    if ($depth === 0) { $endPos = $i; break; }
+                }
+            }
+
+            if ($endPos > $startPos) {
+                return substr($raw, $startPos, $endPos - $startPos + 1);
+            }
+        }
+
+        // Pattern 4: Fallback — return as-is
+        return $raw;
+    }
+
+    /**
+     * Sanitize common JSON issues from OpenRouter output.
+     */
+    private function sanitizeJsonString(string $json): string
+    {
+        // Remove trailing commas before } or ]
+        $json = preg_replace('/,\s*([}\]])/m', '$1', $json);
+
+        // Remove single-line comments (// ...)
+        $json = preg_replace('/\/\/[^\n]*/', '', $json);
+
+        // Replace curly/smart quotes with straight quotes
+        $json = str_replace(["\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}"], '"', $json);
+
+        // Trim whitespace
+        return trim($json);
+    }
+
+    /**
+     * Build a fallback response when JSON parsing completely fails.
+     * Tries to extract key information from raw text.
+     */
+    private function buildTextFallbackResponse(string $rawText): array
+    {
+        $lower = strtolower($rawText);
+
+        // Detect condition from text keywords
+        $predictedClass = 'Normal';
+        if (str_contains($lower, 'rabun jauh') || str_contains($lower, 'miopi') || str_contains($lower, 'myopia')) {
+            $predictedClass = 'Rabun Jauh';
+        } elseif (str_contains($lower, 'rabun dekat') || str_contains($lower, 'hiper') || str_contains($lower, 'presbi')) {
+            $predictedClass = 'Rabun Dekat';
+        } elseif (str_contains($lower, 'silinder') || str_contains($lower, 'astigmat')) {
+            $predictedClass = 'Silinder';
+        }
+
+        // Extract a clean summary (first 300 chars, no JSON artifacts)
+        $cleanText = preg_replace('/[{}\[\]":]/', '', $rawText);
+        $cleanText = preg_replace('/\s+/', ' ', trim($cleanText));
+        $recommendation = mb_substr($cleanText, 0, 300);
+        if (empty($recommendation)) {
+            $recommendation = 'Berdasarkan analisis, disarankan untuk melakukan pemeriksaan ke dokter mata.';
+        }
+
+        return $this->buildFallbackResponse($predictedClass, $recommendation);
+    }
+
+    /**
+     * Build a standard structured fallback response.
+     */
+    private function buildFallbackResponse(string $predictedClass, string $recommendation): array
+    {
         return [
-            'predicted_class' => 'Normal',
-            'confidence' => 0.5,
-            'recommendation' => $content ?: 'Tidak dapat mem-parse respons kontent.',
+            'predicted_class'   => $predictedClass,
+            'confidence'        => 0.50,
+            'visual_acuity'     => null,
+            'snellen_decimal'   => null,
+            'recommendation'    => $recommendation,
+            'action_required'   => $predictedClass !== 'Normal',
+            'can_consult_chatbot' => true,
+            'friendly_summary'  => 'Hasil analisis menunjukkan kondisi ' . $predictedClass . '. Silakan konsultasikan dengan dokter mata untuk pemeriksaan lebih lanjut.',
         ];
     }
 }
