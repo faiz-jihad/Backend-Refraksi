@@ -46,29 +46,67 @@ class RefractionService
 
                 // Call AI
                 // Call AI (Menggunakan Mock jika USE_MOCK_AI = true agar hemat kuota)
-                $estimateMinus = 0.0;
-                if ($smallestRow > 20) {
-                    $estimateMinus = -($smallestRow / 100);
+                // Estimate sphere based on test results to populate right_eye_sphere and left_eye_sphere
+                $estimatedSphere = 0.0;
+                if ($testType === 'near') {
+                    if ($smallestN >= 6) {
+                        $estimatedSphere = match ($smallestN) {
+                            6 => 1.00,
+                            8 => 1.50,
+                            10 => 2.00,
+                            12 => 2.50,
+                            default => $smallestN >= 12 ? 2.50 : 1.00,
+                        };
+                    }
+                } else { // 'distance' or 'comprehensive'
+                    if ($smallestRow > 20) {
+                        if ($smallestRow <= 25) {
+                            $estimatedSphere = -0.37;
+                        } elseif ($smallestRow <= 30) {
+                            $estimatedSphere = -0.75;
+                        } elseif ($smallestRow <= 40) {
+                            $estimatedSphere = -1.25;
+                        } elseif ($smallestRow <= 60) {
+                            $estimatedSphere = -1.75;
+                        } elseif ($smallestRow <= 80) {
+                            $estimatedSphere = -2.25;
+                        } elseif ($smallestRow <= 100) {
+                            $estimatedSphere = -3.00;
+                        } else {
+                            $estimatedSphere = -4.00;
+                        }
+                    } elseif ($testType === 'comprehensive' && $smallestN >= 6) {
+                        $estimatedSphere = match ($smallestN) {
+                            6 => 1.00,
+                            8 => 1.50,
+                            10 => 2.00,
+                            12 => 2.50,
+                            default => $smallestN >= 12 ? 2.50 : 1.00,
+                        };
+                    }
                 }
 
-                $isNormal = true;
+                $estimatedCylinder = null;
+                if ($snellenData['astigmatism_found'] ?? false) {
+                    $estimatedCylinder = -0.50; // Mild starting astigmatism estimate
+                }
+
+                $isNormal = $estimatedSphere === 0.0 && $estimatedCylinder === null;
                 $predictedClass = 'Normal';
                 $recommendation = 'Penglihatan Anda normal. Anda dapat membaca baris 20/20 dengan baik. Pertahankan kesehatan mata Anda.';
                 $friendlySummary = 'Mata kamu sehat dan normal!';
 
                 if ($testType === 'near') {
                     if ($smallestN >= 8) {
-                        $isNormal = false;
                         $predictedClass = 'Rabun Dekat';
-                        $recommendation = "Anda terindikasi mengalami Presbiopi/Hipermetropi (Rabun Dekat) karena batas membaca terkecil Anda adalah N{$smallestN}. Disarankan melakukan pemeriksaan lebih lanjut untuk ukuran kacamata baca Anda.";
-                        $friendlySummary = "Hasil tes menunjukkan kamu kemungkinan mengalami rabun dekat (Presbiopi). Yuk periksa lebih lanjut!";
+                        $recommendation = "Anda terindikasi mengalami Presbiopi/Hipermetropi (Rabun Dekat) karena batas membaca terkecil Anda adalah N{$smallestN}, dengan estimasi kebutuhan lensa baca sekitar +{$estimatedSphere} Diopter. Disarankan melakukan pemeriksaan lebih lanjut untuk ukuran kacamata baca Anda.";
+                        $friendlySummary = "Hasil tes menunjukkan kamu kemungkinan mengalami rabun dekat (Presbiopi) dengan perkiraan ukuran +{$estimatedSphere}. Yuk periksa lebih lanjut!";
                     }
                 } elseif ($testType === 'distance') {
                     if ($smallestRow > 20) {
-                        $isNormal = false;
                         $predictedClass = 'Rabun Jauh';
-                        $recommendation = "Anda terindikasi mengalami Myopia (Rabun Jauh) karena hanya bisa membaca sampai baris 20/{$smallestRow}. Disarankan menggunakan kacamata dengan estimasi ukuran sekitar {$estimateMinus} Diopter. Konsultasikan dengan dokter spesialis mata untuk pemeriksaan refraksi yang lebih akurat.";
-                        $friendlySummary = "Hasil tes menunjukkan kamu kemungkinan mengalami rabun jauh (Miopi). Yuk periksa lebih lanjut!";
+                        $recommendation = "Anda terindikasi mengalami Myopia (Rabun Jauh) karena hanya bisa membaca sampai baris 20/{$smallestRow}. Disarankan menggunakan kacamata dengan estimasi ukuran sekitar " . number_format($estimatedSphere, 2) . " Diopter. Konsultasikan dengan dokter spesialis mata untuk pemeriksaan refraksi yang lebih akurat.";
+                        $friendlySummary = "Hasil tes menunjukkan kamu kemungkinan mengalami rabun jauh (Miopi) dengan perkiraan ukuran " . number_format($estimatedSphere, 2) . ". Yuk periksa lebih lanjut!";
                     }
                 } else {
                     $conditionsList = [];
@@ -80,7 +118,6 @@ class RefractionService
                     }
                     
                     if (!empty($conditionsList)) {
-                        $isNormal = false;
                         $predictedClass = implode(' & ', $conditionsList);
                         $recommendation = "Hasil tes komprehensif Anda menunjukkan adanya indikasi " . implode(' dan ', $conditionsList) . ". Silakan periksakan ke dokter spesialis mata untuk diagnosa lengkap.";
                         $friendlySummary = "Hasil tes menunjukkan kamu mengalami kelainan refraksi (" . implode(' & ', $conditionsList) . "). Yuk periksa ke ahlinya!";
@@ -88,7 +125,6 @@ class RefractionService
                 }
 
                 if ($snellenData['astigmatism_found'] ?? false) {
-                    $isNormal = false;
                     if ($predictedClass === 'Normal') {
                         $predictedClass = 'Silinder';
                         $recommendation = "Anda terindikasi mengalami Astigmatisme (Silinder). Disarankan melakukan pemeriksaan ke dokter mata untuk mendapatkan lensa silinder.";
@@ -132,8 +168,10 @@ class RefractionService
                 // Save to DB
                 $refraction = $this->refractionRepository->create([
                     'user_id'            => $userId,
-                    'right_eye_sphere'   => 0.0,
-                    'left_eye_sphere'    => 0.0,
+                    'right_eye_sphere'   => $estimatedSphere,
+                    'left_eye_sphere'    => $estimatedSphere,
+                    'right_eye_cylinder' => $estimatedCylinder,
+                    'left_eye_cylinder'  => $estimatedCylinder,
                     'visual_acuity'      => $aiResult['visual_acuity'] ?? $visualAcuity,
                     'ai_recommendations' => $aiResult,
                 ]);
