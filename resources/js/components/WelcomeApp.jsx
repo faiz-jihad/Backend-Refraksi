@@ -69,38 +69,38 @@ function PageLoadAnimation({ onComplete }) {
         });
 
         // Logo & text entrance
-        tl.from(logoRef.current, { scale: 0, opacity: 0, duration: 0.6, ease: 'back.out(1.7)' })
-          .from(textRef.current, { y: 20, opacity: 0, duration: 0.4, ease: 'power2.out' }, '-=0.2')
-          .from(barRef.current, { scaleX: 0, duration: 0.3, ease: 'power2.out', transformOrigin: 'left' }, '-=0.1')
+        tl.from(logoRef.current, { scale: 0, opacity: 0, duration: 0.4, ease: 'back.out(1.7)' })
+          .from(textRef.current, { y: 20, opacity: 0, duration: 0.3, ease: 'power2.out' }, '-=0.15')
+          .from(barRef.current, { scaleX: 0, duration: 0.2, ease: 'power2.out', transformOrigin: 'left' }, '-=0.1')
 
         // Progress counter
         let count = { val: 0 };
         tl.to(count, {
             val: 100,
-            duration: 1.2,
+            duration: 0.6,
             ease: 'power2.inOut',
             onUpdate: () => setPct(Math.round(count.val)),
-        }, '-=0.5');
+        }, '-=0.3');
 
         // Fill progress bar
-        tl.to(progressRef.current, { scaleX: 1, duration: 1.2, ease: 'power2.inOut', transformOrigin: 'left' }, '-=1.2');
+        tl.to(progressRef.current, { scaleX: 1, duration: 0.6, ease: 'power2.inOut', transformOrigin: 'left' }, '-=0.6');
 
         // Fade out content first
         tl.to(contentRef.current, {
             opacity: 0,
             y: -40,
-            duration: 0.5,
+            duration: 0.3,
             ease: 'power3.in',
-            delay: 0.1
+            delay: 0
         });
 
         // Staggered slide up of the 4 vertical panels
         tl.to('.curtain-panel', {
             yPercent: -100,
-            duration: 0.85,
-            stagger: 0.08,
+            duration: 0.55,
+            stagger: 0.05,
             ease: 'power4.inOut'
-        }, '-=0.2');
+        }, '-=0.15');
 
         return () => tl.kill();
     }, []);
@@ -255,7 +255,7 @@ function ScreenSnellen() {
                 <span style={{ fontSize: '0.62rem', fontWeight: 800 }}>Tes Rabun Jauh</span>
                 <span style={{ fontSize: '0.5rem', background: 'rgba(34,197,94,0.2)', color: T.brandL, padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>OD</span>
             </div>
-            <div style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+            <div style={{ fontSize: '0.5rem', color: '#B2C7B9', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
                 Jarak: <span style={{ color: T.brandL, fontWeight: 700 }}>40 cm</span> <Check size={10} color={T.brandL} strokeWidth={3} />
             </div>
             <div style={{ background: '#fff', borderRadius: 14, padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: 1, color: '#000' }}>
@@ -263,7 +263,7 @@ function ScreenSnellen() {
                 <div style={{ display: 'flex', gap: 8, fontSize: '1.1rem', fontWeight: 800 }}><span>F</span><span>P</span></div>
                 <div style={{ display: 'flex', gap: 6, fontSize: '0.6rem', fontWeight: 800, opacity: 0.65 }}><span>T</span><span>O</span><span>Z</span></div>
                 <div style={{ display: 'flex', gap: 5, fontSize: '0.44rem', fontWeight: 800, opacity: 0.35 }}><span>L</span><span>P</span><span>E</span><span>D</span></div>
-                <div style={{ fontSize: '0.45rem', color: T.brand, fontWeight: 700, marginTop: 4 }}>Baris Aktif: 20/30</div>
+                <div style={{ fontSize: '0.45rem', color: '#15803D', fontWeight: 700, marginTop: 4 }}>Baris Aktif: 20/30</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 4 }}>
                 {['Kiri','Atas','Kanan','Bawah'].map((d, i) => (
@@ -502,7 +502,7 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled })
                                 Masuk
                             </a>
                         )}
-                        <button onClick={() => setOpen(v => !v)} className="mc-nav-mobile-btn" style={{ display: 'none', padding: '8px', borderRadius: 8, border: `1.5px solid ${T.border}`, background: 'transparent', cursor: 'pointer' }}>
+                        <button onClick={() => setOpen(v => !v)} aria-label="Buka menu navigasi" className="mc-nav-mobile-btn" style={{ display: 'none', padding: '8px', borderRadius: 8, border: `1.5px solid ${T.border}`, background: 'transparent', cursor: 'pointer' }}>
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={T.text} strokeWidth="2">
                                 {open ? <path d="M18 6L6 18M6 6l12 12"/> : <path d="M3 12h18M3 6h18M3 18h18"/>}
                             </svg>
@@ -564,14 +564,22 @@ function HeroSection({ loginRoute, adminRoute, isAuthenticated, apkRoute, onStor
         const iv = setInterval(() => setScreenIdx(s => (s + 1) % 3), 4200);
 
         // Parallax blobs on mouse move
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+        const onResize = () => {
+            w = window.innerWidth;
+            h = window.innerHeight;
+        };
+        window.addEventListener('resize', onResize, { passive: true });
+
         const onMove = (e) => {
-            const nx = (e.clientX / window.innerWidth - 0.5);
-            const ny = (e.clientY / window.innerHeight - 0.5);
+            const nx = (e.clientX / w - 0.5);
+            const ny = (e.clientY / h - 0.5);
             gsap.to(blob1.current, { x: nx * 70, y: ny * 50, duration: 2.5, ease: 'power2.out' });
             gsap.to(blob2.current, { x: nx * -90, y: ny * -60, duration: 2.5, ease: 'power2.out' });
             gsap.to(blob3.current, { x: nx * 40, y: ny * 80, duration: 3, ease: 'power2.out' });
         };
-        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mousemove', onMove, { passive: true });
 
         // GSAP staggered hero entrance after curtain clears
         const ctx = gsap.context(() => {
@@ -588,6 +596,7 @@ function HeroSection({ loginRoute, adminRoute, isAuthenticated, apkRoute, onStor
 
         return () => {
             clearInterval(iv);
+            window.removeEventListener('resize', onResize);
             window.removeEventListener('mousemove', onMove);
             ctx.revert();
         };
@@ -618,8 +627,8 @@ function HeroSection({ loginRoute, adminRoute, isAuthenticated, apkRoute, onStor
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                         {/* Badge */}
                         <div className="mc-hero-badge">
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', borderRadius: 99, border: `1.5px solid rgba(22,163,74,0.25)`, background: 'rgba(22,163,74,0.07)', fontSize: '0.72rem', fontWeight: 700, color: T.brand, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                                <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.brand, display: 'inline-block', animation: 'mc-pulse 2s infinite' }}/>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', borderRadius: 99, border: `1.5px solid rgba(22,163,74,0.25)`, background: 'rgba(22,163,74,0.07)', fontSize: '0.72rem', fontWeight: 700, color: T.brandD, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.brandD, display: 'inline-block', animation: 'mc-pulse 2s infinite' }}/>
                                 Aplikasi Kesehatan Mata #1 Indonesia
                             </span>
                         </div>
@@ -774,7 +783,7 @@ function HowItWorks() {
 
             <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
                 <div className="sr-up" style={{ textAlign: 'center', marginBottom: 64 }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 99, border: `1.5px solid rgba(22,163,74,0.22)`, background: 'rgba(22,163,74,0.07)', fontSize: '0.72rem', fontWeight: 700, color: T.brand, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 18 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 99, border: `1.5px solid rgba(22,163,74,0.22)`, background: 'rgba(22,163,74,0.07)', fontSize: '0.72rem', fontWeight: 700, color: T.brandD, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 18 }}>
                         Mudah & Cepat
                     </span>
                     <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)', fontWeight: 800, letterSpacing: '-0.04em', color: T.text, margin: '0 0 14px' }}>
@@ -949,7 +958,12 @@ const REVIEWS = [
 
 function Testimonials() {
     const [idx, setIdx] = useState(0);
-    const [perView, setPerView] = useState(3);
+    const [perView, setPerView] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < 768 ? 1 : window.innerWidth < 1100 ? 2 : 3;
+        }
+        return 3;
+    });
     const trackRef = useRef(null);
 
     useEffect(() => {
@@ -964,7 +978,7 @@ function Testimonials() {
             <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, flexWrap: 'wrap', gap: 20 }}>
                     <div className="sr-up">
-                        <span style={{ display: 'block', width: 'max-content', marginBottom: 14, padding: '5px 14px', borderRadius: 99, border: `1.5px solid rgba(22,163,74,0.22)`, background: 'rgba(22,163,74,0.07)', fontSize: '0.72rem', fontWeight: 700, color: T.brand, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        <span style={{ display: 'block', width: 'max-content', marginBottom: 14, padding: '5px 14px', borderRadius: 99, border: `1.5px solid rgba(22,163,74,0.22)`, background: 'rgba(22,163,74,0.07)', fontSize: '0.72rem', fontWeight: 700, color: T.brandD, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                             Testimoni Nyata
                         </span>
                         <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)', fontWeight: 800, letterSpacing: '-0.04em', color: T.text, margin: 0 }}>
@@ -981,6 +995,7 @@ function Testimonials() {
                             <button key={dir}
                                 onClick={() => setIdx(p => dir === 0 ? Math.max(p - 1, 0) : Math.min(p + 1, max))}
                                 disabled={dir === 0 ? idx === 0 : idx === max}
+                                aria-label={dir === 0 ? "Ulasan sebelumnya" : "Ulasan berikutnya"}
                                 style={{ width: 44, height: 44, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (dir === 0 ? idx === 0 : idx === max) ? 0.3 : 1, transition: 'all 0.2s', boxShadow: T.shadow }}
                                 onMouseEnter={e => { if (!((dir === 0 ? idx === 0 : idx === max))) { e.currentTarget.style.borderColor = T.brand; e.currentTarget.style.background = T.gradSoft; } }}
                                 onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = '#fff'; }}>
@@ -1143,16 +1158,16 @@ function Footer({ onGeneralClick }) {
                             </div>
                             <span style={{ fontWeight: 800, fontSize: '1.15rem' }}>Mata<span style={{ color: T.brandL }}>Ceria</span></span>
                         </div>
-                        <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, maxWidth: 260, margin: '0 0 24px' }}>
+                        <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, maxWidth: 260, margin: '0 0 24px' }}>
                             Platform revolusioner kesehatan mata digital di Indonesia. Membantu pengguna memahami kondisi penglihatan dengan teknologi AI terdepan.
                         </p>
                         <div style={{ display: 'flex', gap: 10 }}>
                             {['Facebook', 'LinkedIn', 'Instagram'].map(s => {
                                 const disp = s === 'Facebook' ? 'f' : s === 'LinkedIn' ? 'in' : 'ig';
                                 return (
-                                    <a key={s} href="#" onClick={(e) => { e.preventDefault(); onGeneralClick(`Media Sosial ${s}`); }} style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.45)', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', transition: 'all 0.2s' }}
+                                    <a key={s} href="#" onClick={(e) => { e.preventDefault(); onGeneralClick(`Media Sosial ${s}`); }} style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.65)', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', transition: 'all 0.2s' }}
                                        onMouseEnter={e => { e.currentTarget.style.background = T.grad; e.currentTarget.style.color = '#fff'; }}
-                                       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}>
+                                       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}>
                                         {disp}
                                     </a>
                                 );
@@ -1161,14 +1176,14 @@ function Footer({ onGeneralClick }) {
                     </div>
                     {cols.map(c => (
                         <div key={c.title}>
-                            <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', margin: '0 0 16px' }}>{c.title}</p>
+                            <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)', margin: '0 0 16px' }}>{c.title}</p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                 {c.links.map(link => {
                                     const linkProps = {
                                         href: link.href,
-                                        style: { fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', transition: 'color 0.15s' },
+                                        style: { fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', textDecoration: 'none', transition: 'color 0.15s' },
                                         onMouseEnter: e => e.currentTarget.style.color = T.brandL,
-                                        onMouseLeave: e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'
+                                        onMouseLeave: e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'
                                     };
                                     if (link.onClick) {
                                         linkProps.onClick = (e) => { e.preventDefault(); link.onClick(); };
@@ -1186,7 +1201,7 @@ function Footer({ onGeneralClick }) {
                     ))}
                 </div>
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px 0', textAlign: 'center' }}>
-                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.22)', margin: 0 }}>
+                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.48)', margin: 0 }}>
                         Copyright © {new Date().getFullYear()} MataCeria · All rights reserved.
                     </p>
                 </div>
@@ -1213,10 +1228,18 @@ export default function WelcomeApp({ loginRoute, adminRoute, isAuthenticated, us
     useScrollReveal('.sr-stagger-up', { y: 35, duration: 0.85, stagger: 0.12 }, !showCurtain);
 
     useEffect(() => {
-        const onScroll = () => setScrolled(window.scrollY > 40);
-        window.addEventListener('scroll', onScroll, { passive: true });
+        const detector = document.getElementById('scroll-detector');
+        let observer;
+        if (detector) {
+            observer = new IntersectionObserver(([entry]) => {
+                setScrolled(!entry.isIntersecting);
+            }, { threshold: 0 });
+            observer.observe(detector);
+        }
         if (typeof window.__mcReady === 'function') window.__mcReady();
-        return () => window.removeEventListener('scroll', onScroll);
+        return () => {
+            if (observer) observer.disconnect();
+        };
     }, []);
 
     const handleStoreClick = (p) => {
@@ -1236,6 +1259,8 @@ export default function WelcomeApp({ loginRoute, adminRoute, isAuthenticated, us
 
     return (
         <div style={{ background: T.bg, minHeight: '100vh', fontFamily: T.font, overflowX: 'hidden' }}>
+            {/* Scroll detector for sticky capsule navbar */}
+            <div id="scroll-detector" style={{ position: 'absolute', top: 40, left: 0, width: '1px', height: '1px', pointerEvents: 'none', visibility: 'hidden' }} />
             {/* Page-load curtain animation */}
             {showCurtain && (
                 <PageLoadAnimation onComplete={() => setShowCurtain(false)} />
