@@ -17,6 +17,52 @@ class AdminController extends Controller
 {
     public function dashboard()
     {
+        $admin = Auth::user();
+        if ($admin && DB::table('notifications')->where('notifiable_id', $admin->id)->count() === 0) {
+            $notificationsData = [
+                [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
+                    'type' => 'App\Notifications\SystemAlert',
+                    'notifiable_type' => 'App\Models\User',
+                    'notifiable_id' => $admin->id,
+                    'data' => json_encode([
+                        'title' => 'Pemeriksaan Baru',
+                        'message' => 'Pasien Rina Marlina baru saja menyelesaikan tes silinder dengan hasil terdeteksi distorsi 30°.',
+                        'action_url' => route('admin.results.index'),
+                    ]),
+                    'created_at' => now()->subMinutes(12)->toDateTimeString(),
+                    'updated_at' => now()->subMinutes(12)->toDateTimeString(),
+                ],
+                [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
+                    'type' => 'App\Notifications\SystemAlert',
+                    'notifiable_type' => 'App\Models\User',
+                    'notifiable_id' => $admin->id,
+                    'data' => json_encode([
+                        'title' => 'Sesi Chat AI Baru',
+                        'message' => 'Sesi chat konsultasi AI baru dimulai oleh Kevin Pratama.',
+                        'action_url' => route('admin.chats.index'),
+                    ]),
+                    'created_at' => now()->subHours(1)->toDateTimeString(),
+                    'updated_at' => now()->subHours(1)->toDateTimeString(),
+                ],
+                [
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
+                    'type' => 'App\Notifications\SystemAlert',
+                    'notifiable_type' => 'App\Models\User',
+                    'notifiable_id' => $admin->id,
+                    'data' => json_encode([
+                        'title' => 'Pendaftaran Pengguna Baru',
+                        'message' => 'Pengguna baru "Budi Santoso" telah mendaftar ke platform MataCeria.',
+                        'action_url' => route('admin.users.index'),
+                    ]),
+                    'created_at' => now()->subHours(3)->toDateTimeString(),
+                    'updated_at' => now()->subHours(3)->toDateTimeString(),
+                ],
+            ];
+            DB::table('notifications')->insert($notificationsData);
+        }
+
         $stats = [
             'total_users' => User::count(),
             'total_results' => RefractionResult::count(),
@@ -445,5 +491,68 @@ class AdminController extends Controller
             'Content-Type' => 'application/json',
             'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
         ]);
+    }
+
+    public function getNotifications()
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $notifications = DB::table('notifications')
+            ->where('notifiable_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($n) {
+                $data = json_decode($n->data, true);
+                return [
+                    'id' => $n->id,
+                    'title' => $data['title'] ?? 'Notifikasi',
+                    'message' => $data['message'] ?? '',
+                    'action_url' => $data['action_url'] ?? '#',
+                    'is_read' => !is_null($n->read_at),
+                    'time_ago' => \Carbon\Carbon::parse($n->created_at)->diffForHumans(),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'notifications' => $notifications,
+            'unread_count' => DB::table('notifications')
+                ->where('notifiable_id', $user->id)
+                ->whereNull('read_at')
+                ->count()
+        ]);
+    }
+
+    public function markNotificationRead($id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        DB::table('notifications')
+            ->where('notifiable_id', $user->id)
+            ->where('id', $id)
+            ->update(['read_at' => now()]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function markAllNotificationsRead()
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        DB::table('notifications')
+            ->where('notifiable_id', $user->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return response()->json(['success' => true]);
     }
 }

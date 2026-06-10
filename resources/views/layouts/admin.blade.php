@@ -785,10 +785,25 @@
             </div>
 
             <div class="header-right">
-                <button class="header-icon-btn" title="Notifikasi">
-                    <i class="ti ti-bell" style="font-size:1.05rem;"></i>
-                    <span class="notif-dot"></span>
-                </button>
+                <div style="position: relative; display: inline-block;" id="notifDropdownContainer">
+                    <button class="header-icon-btn" title="Notifikasi" id="notifBellBtn" onclick="toggleNotifDropdown(event)">
+                        <i class="ti ti-bell" style="font-size:1.05rem;"></i>
+                        <span class="notif-dot" id="notifDot" style="display: none;"></span>
+                    </button>
+                    <!-- Beautiful Dropdown Panel -->
+                    <div id="notifDropdown" style="display: none; position: absolute; top: calc(100% + 10px); right: 0; width: 320px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--shadow-lg); z-index: 1000; overflow: hidden; animation: fadeInUp 0.2s ease-out;">
+                        <div style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+                            <h4 style="margin: 0; font-size: 0.85rem; font-weight: 700; color: var(--text);">Notifikasi</h4>
+                            <button onclick="markAllNotifAsRead(event)" style="background: none; border: none; font-size: 0.72rem; color: var(--brand); font-weight: 600; cursor: pointer;">Tandai semua dibaca</button>
+                        </div>
+                        <div id="notifListContainer" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column;">
+                            <!-- Notification list items populated via JS -->
+                        </div>
+                        <div style="padding: 0.75rem; border-top: 1px solid var(--border); text-align: center; background: var(--surface-2);">
+                            <span style="font-size: 0.72rem; color: var(--text-3); font-weight: 500;">MataCeria Live Updates</span>
+                        </div>
+                    </div>
+                </div>
                 <button class="header-icon-btn" title="Bantuan">
                     <i class="ti ti-help-circle" style="font-size:1.05rem;"></i>
                 </button>
@@ -840,6 +855,131 @@
                 });
             });
         }
+
+        // Notification Dropdown Toggle and AJAX logic
+        const notifDropdown = document.getElementById('notifDropdown');
+        const notifDot = document.getElementById('notifDot');
+        const notifListContainer = document.getElementById('notifListContainer');
+
+        function toggleNotifDropdown(e) {
+            e.stopPropagation();
+            if (notifDropdown.style.display === 'none' || notifDropdown.style.display === '') {
+                notifDropdown.style.display = 'block';
+                fetchNotifications();
+            } else {
+                notifDropdown.style.display = 'none';
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const container = document.getElementById('notifDropdownContainer');
+            if (notifDropdown && container && !container.contains(e.target)) {
+                notifDropdown.style.display = 'none';
+            }
+        });
+
+        async function fetchNotifications() {
+            try {
+                const res = await fetch('{{ route("admin.notifications.index") }}');
+                const data = await res.json();
+                if (data.success) {
+                    updateNotifBadge(data.unread_count);
+                    renderNotifications(data.notifications);
+                }
+            } catch (err) {
+                console.error("Failed to fetch notifications", err);
+            }
+        }
+
+        function updateNotifBadge(unreadCount) {
+            if (unreadCount > 0) {
+                notifDot.style.display = 'block';
+            } else {
+                notifDot.style.display = 'none';
+            }
+        }
+
+        function renderNotifications(list) {
+            notifListContainer.innerHTML = '';
+            if (list.length === 0) {
+                notifListContainer.innerHTML = `
+                    <div style="padding: 2rem 1rem; text-align: center; color: var(--text-4);">
+                        <i class="ti ti-bell-off" style="font-size: 1.5rem; opacity: 0.6; display: block; margin-bottom: 0.5rem;"></i>
+                        <span style="font-size: 0.78rem;">Tidak ada notifikasi baru</span>
+                    </div>
+                `;
+                return;
+            }
+
+            list.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.style.padding = '0.875rem 1rem';
+                itemEl.style.borderBottom = '1px solid var(--border-2)';
+                itemEl.style.background = item.is_read ? 'transparent' : 'var(--brand-light)';
+                itemEl.style.cursor = 'pointer';
+                itemEl.style.transition = 'background 0.2s';
+                itemEl.onmouseenter = () => itemEl.style.background = 'var(--surface-hover)';
+                itemEl.onmouseleave = () => itemEl.style.background = item.is_read ? 'transparent' : 'var(--brand-light)';
+
+                // Mark read on click and navigate
+                itemEl.onclick = async () => {
+                    if (!item.is_read) {
+                        try {
+                            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+                            await fetch(`/admin/notifications/${item.id}/read`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrf
+                                }
+                            });
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    }
+                    window.location.href = item.action_url;
+                };
+
+                itemEl.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text);">${item.title}</span>
+                            <span style="font-size: 0.65rem; color: var(--text-3); white-space: nowrap;">${item.time_ago}</span>
+                        </div>
+                        <p style="margin: 0; font-size: 0.75rem; color: var(--text-2); line-height: 1.35;">${item.message}</p>
+                    </div>
+                `;
+                notifListContainer.appendChild(itemEl);
+            });
+        }
+
+        async function markAllNotifAsRead(e) {
+            e.stopPropagation();
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]').content;
+                const res = await fetch('{{ route("admin.notifications.read-all") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    fetchNotifications();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Run badge check on load
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchNotifications();
+            // Poll every 30 seconds for new notifications
+            setInterval(fetchNotifications, 30000);
+        });
     </script>
 </body>
 </html>

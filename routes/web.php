@@ -72,6 +72,11 @@ Route::prefix('admin')->group(function () {
         Route::get('/doctors', [AdminController::class, 'doctorsIndex'])->name('admin.doctors.index');
         Route::post('/doctors', [AdminController::class, 'storeDoctor'])->name('admin.doctors.store');
         Route::delete('/doctors/{doctor}', [AdminController::class, 'destroyDoctor'])->name('admin.doctors.destroy');
+        
+        // Admin Web Notifications
+        Route::get('/notifications', [AdminController::class, 'getNotifications'])->name('admin.notifications.index');
+        Route::post('/notifications/{id}/read', [AdminController::class, 'markNotificationRead'])->name('admin.notifications.read');
+        Route::post('/notifications/read-all', [AdminController::class, 'markAllNotificationsRead'])->name('admin.notifications.read-all');
     });
 });
 
