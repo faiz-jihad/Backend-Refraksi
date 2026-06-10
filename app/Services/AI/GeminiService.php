@@ -402,7 +402,7 @@ PROMPT;
                     $text = $response->json('candidates.0.content.parts.0.text', '');
                     
                     if (empty($text)) {
-                        Log::warning('Gemini returned empty response', [
+                        Log::error('Gemini returned empty response', [
                             'payload' => $this->sanitizePayload($payload),
                             'response' => $response->json()
                         ]);
@@ -415,7 +415,7 @@ PROMPT;
                 // Handle rate limiting
                 if ($response->status() === 429) {
                     $retryAfter = $response->header('Retry-After', $this->retryDelay / 1000);
-                    Log::warning('Gemini rate limit hit, retrying', [
+                    Log::error('Gemini rate limit hit, retrying', [
                         'retry_after' => $retryAfter,
                         'attempt' => $attempt
                     ]);
@@ -509,7 +509,7 @@ PROMPT;
         ]);
 
         if (empty(trim($raw))) {
-            Log::warning('Gemini returned completely empty response');
+            Log::error('Gemini returned completely empty response');
             return $this->buildFallbackResponse('Normal', 'AI tidak memberikan analisis. Silakan coba lagi.');
         }
 
@@ -534,7 +534,7 @@ PROMPT;
         }
 
         // Strategy 4: Build structured response from raw text (graceful degradation)
-        Log::warning('Gemini JSON Parse failed after all strategies — using text-based fallback', [
+        Log::error('Gemini JSON Parse failed after all strategies — using text-based fallback', [
             'json_error' => json_last_error_msg(),
             'raw'        => mb_substr($raw, 0, 800),
         ]);

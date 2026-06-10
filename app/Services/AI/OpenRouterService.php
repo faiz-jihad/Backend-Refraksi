@@ -151,7 +151,7 @@ class OpenRouterService
 
                     if ($response->status() === 429) {
                         $retryAfter = (int) $response->header('Retry-After', $this->retryDelay / 1000);
-                        Log::warning("OpenRouter chat rate limit hit for {$currentModel}, retrying", ['retry_after' => $retryAfter, 'attempt' => $attempt]);
+                        Log::error("OpenRouter chat rate limit hit for {$currentModel}, retrying", ['retry_after' => $retryAfter, 'attempt' => $attempt]);
                         sleep($retryAfter);
                         continue;
                     }
@@ -299,7 +299,7 @@ PROMPT;
 
                     if ($response->status() === 429) {
                         $retryAfter = (int) $response->header('Retry-After', $this->retryDelay / 1000);
-                        Log::warning("OpenRouter rate limit hit for {$currentModel}, retrying", ['retry_after' => $retryAfter, 'attempt' => $attempt]);
+                        Log::error("OpenRouter rate limit hit for {$currentModel}, retrying", ['retry_after' => $retryAfter, 'attempt' => $attempt]);
                         sleep($retryAfter);
                         continue;
                     }
@@ -344,13 +344,13 @@ PROMPT;
         Log::debug('OpenRouter Full Raw Response Payload:', ['payload' => $raw]);
 
         if (empty(trim($raw))) {
-            Log::warning('OpenRouter returned completely empty response');
+            Log::error('OpenRouter returned completely empty response');
             return $this->buildFallbackResponse('Normal', 'AI tidak memberikan analisis. Silakan coba lagi.');
         }
 
         $decoded = json_decode(trim($raw), true);
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
-            Log::warning('OpenRouter JSON Parse failed for main payload: ' . json_last_error_msg(), [
+            Log::error('OpenRouter JSON Parse failed for main payload: ' . json_last_error_msg(), [
                 'raw_payload' => $raw
             ]);
             return $this->buildFallbackResponse('Normal', 'Gagal mem-parse respons utama dari OpenRouter.');
@@ -358,7 +358,7 @@ PROMPT;
         
         $content = $decoded['choices'][0]['message']['content'] ?? '';
         if (empty(trim($content))) {
-            Log::warning('OpenRouter message content is empty', ['decoded_payload' => $decoded]);
+            Log::error('OpenRouter message content is empty', ['decoded_payload' => $decoded]);
             return $this->buildFallbackResponse('Normal', 'Konten respons OpenRouter kosong.');
         }
 
@@ -383,7 +383,7 @@ PROMPT;
         }
 
         // Strategy 4: Build structured response from raw text (graceful degradation)
-        Log::warning('OpenRouter JSON Parse failed after all strategies — using text-based fallback', [
+        Log::error('OpenRouter JSON Parse failed after all strategies — using text-based fallback', [
             'json_error' => json_last_error_msg(),
             'raw_content'=> mb_substr($content, 0, 800),
         ]);
