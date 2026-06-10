@@ -219,15 +219,39 @@ class OpenRouterService
             ['role' => 'user', 'content' => $userPrompt],
         ];
         
-        $payload = [
-            'model'       => $this->model,
-            'messages'    => $messages,
-            'temperature' => 0.2,      // Low temperature for consistent JSON
-            'max_tokens'  => 512,
-            'response_format' => ['type' => 'json_object'], // OpenRouter supports this for some models
-        ];
+        $models = $this->getModelsToTry();
+        $lastException = null;
 
-        return $this->sendChatRequest($payload);
+        foreach ($models as $currentModel) {
+            try {
+                $payload = [
+                    'model'       => $currentModel,
+                    'messages'    => $messages,
+                    'temperature' => 0.2,      // Low temperature for consistent JSON
+                    'max_tokens'  => 512,
+                    'response_format' => ['type' => 'json_object'], // OpenRouter supports this for some models
+                ];
+
+                Log::info("OpenRouter structured request attempt", ['model' => $currentModel]);
+                
+                return $this->sendChatRequest($payload);
+                
+            } catch (GeminiException $e) {
+                Log::warning("OpenRouter structured request failed for {$currentModel}: " . $e->getMessage());
+                $lastException = $e;
+                continue;
+            } catch (\Exception $e) {
+                Log::error("OpenRouter structured request unexpected error for {$currentModel}: " . $e->getMessage());
+                $lastException = new GeminiException(
+                    "Gagal terhubung ke OpenRouter ({$currentModel}): " . $e->getMessage()
+                );
+                continue;
+            }
+        }
+
+        throw $lastException ?? new GeminiException(
+            'Semua model OpenRouter tidak tersedia untuk analisis struktural.'
+        );
     }
 
     /**
@@ -267,21 +291,8 @@ class OpenRouterService
 
                 // Rate limiting (429)
                 if ($response->status() === 429) {
-                    $retryAfter = (int) $response->header('Retry-After', $this->retryDelay / 1000);
-                    Log::warning('OpenRouter rate limit', [
-                        'retry_after' => $retryAfter,
-                        'attempt'     => $attempt + 1,
-                        'model'       => $payload['model'] ?? 'unknown',
-                    ]);
-                    
-                    if ($retryAfter > 60) {
-                        // Too long to wait, skip to next model
-                        throw new GeminiException('Rate limit terlalu lama (>60s)');
-                    }
-                    
-                    sleep(max(1, $retryAfter));
-                    $attempt++;
-                    continue;
+                    Log::error("OpenRouter rate limit hit for {$payload['model']}, skipping to next model immediately");
+                    throw new GeminiException("Rate limit hit (429) untuk model {$payload['model']}, beralih ke model lain.", 429);
                 }
 
                 // Provider errors (5xx) - OpenRouter specific
@@ -500,6 +511,13 @@ ACUAN ESTIMASI:
 - 20/60: -1.50 s.d -2.00
 - 20/80: -2.00 s.d -2.50
 - 20/200+: Di atas -4.00
+
+TABEL ACUAN ESTIMASI DIOPTRIS PLUS (Presbiopi / Rabun Dekat):
+- N5: 0.00 (Normal)
+- N6: Sekitar +1.00 Dioptri
+- N8: Sekitar +1.50 Dioptri
+- N10: Sekitar +2.00 Dioptri
+- N12: Sekitar +2.50 Dioptri atau lebih
 
 ATURAN DIAGNOSA:
 - test_type 'distance' + smallest_row_read >= 40 = Rabun Jauh
@@ -720,24 +738,56 @@ PROMPT;
     private function buildTextFallbackResponse(string $rawText): array
     {
         $lower = strtolower($rawText);
-
         $predictedClass = 'Normal';
+        $hasAstigmatism = $this->hasAstigmatism($rawText);
+
         if (str_contains($lower, 'rabun jauh') || str_contains($lower, 'miopi')) {
-            $predictedClass = (str_contains($lower, 'silinder') || str_contains($lower, 'astigmat')) 
-                ? 'Rabun Jauh & Silinder' : 'Rabun Jauh';
+            $predictedClass = $hasAstigmatism ? 'Rabun Jauh & Silinder' : 'Rabun Jauh';
         } elseif (str_contains($lower, 'rabun dekat') || str_contains($lower, 'hiper')) {
-            $predictedClass = (str_contains($lower, 'silinder') || str_contains($lower, 'astigmat')) 
-                ? 'Rabun Dekat & Silinder' : 'Rabun Dekat';
-        } elseif (str_contains($lower, 'silinder') || str_contains($lower, 'astigmat')) {
+            $predictedClass = $hasAstigmatism ? 'Rabun Dekat & Silinder' : 'Rabun Dekat';
+        } elseif ($hasAstigmatism) {
             $predictedClass = 'Silinder';
         }
 
-        $cleanText = preg_replace('/[{}\[\]":]/', '', $rawText);
-        $cleanText = preg_replace('/\s+/', ' ', trim($cleanText));
-        $recommendation = mb_substr($cleanText, 0, 300) ?: 
-                         'Disarankan untuk melakukan pemeriksaan ke dokter mata.';
+        // Try to extract only the recommendation content via regex
+        $recommendation = '';
+        if (preg_match('/(?:recommendation|rekomendasi|kondisi)\s*[:\-\s]+([\s\S]+?)(?=(?:action_required|friendly_summary|can_consult_chatbot|is_fallback|$))/i', $rawText, $matches)) {
+            $recommendation = trim($matches[1]);
+            $recommendation = rtrim($recommendation, '",\t\n\r ');
+        } else {
+            $cleanText = preg_replace('/[{}\[\]":]/', '', $rawText);
+            $cleanText = preg_replace('/\s+/', ' ', trim($cleanText));
+            $recommendation = mb_substr($cleanText, 0, 500) ?: 'Disarankan untuk melakukan pemeriksaan ke dokter mata.';
+        }
 
-        return $this->buildFallbackResponse($predictedClass, $recommendation);
+        // Try to extract friendly summary
+        $friendlySummary = null;
+        if (preg_match('/friendly_summary\s*[:\-\s]+([\s\S]+?)(?=(?:action_required|can_consult_chatbot|is_fallback|$))/i', $rawText, $matches)) {
+            $friendlySummary = trim($matches[1]);
+            $friendlySummary = rtrim($friendlySummary, '",\t\n\r ');
+        }
+
+        $response = $this->buildFallbackResponse($predictedClass, $recommendation);
+        if ($friendlySummary) {
+            $response['friendly_summary'] = $friendlySummary;
+        }
+
+        return $response;
+    }
+
+    /**
+     * Helper to check for astigmatism while ignoring negative prefixes.
+     */
+    private function hasAstigmatism(string $text): bool
+    {
+        $lower = strtolower($text);
+        if (str_contains($lower, 'astigmat') || str_contains($lower, 'silinder')) {
+            if (preg_match('/(?:tidak|bukan|tanpa|no|negatif|tidak\s+terdeteksi)\s+(?:ada\s+)?(?:indikasi\s+)?(?:astigmat|silinder)/i', $lower)) {
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
 
     /**

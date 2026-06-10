@@ -46,25 +46,70 @@ class RefractionService
 
                 // Call AI
                 // Call AI (Menggunakan Mock jika USE_MOCK_AI = true agar hemat kuota)
-                // Hitung estimasi minus berdasarkan baris terkecil yang terbaca
                 $estimateMinus = 0.0;
                 if ($smallestRow > 20) {
-                    $estimateMinus = -($smallestRow / 100); // Estimasi kasar
+                    $estimateMinus = -($smallestRow / 100);
+                }
+
+                $isNormal = true;
+                $predictedClass = 'Normal';
+                $recommendation = 'Penglihatan Anda normal. Anda dapat membaca baris 20/20 dengan baik. Pertahankan kesehatan mata Anda.';
+                $friendlySummary = 'Mata kamu sehat dan normal!';
+
+                if ($testType === 'near') {
+                    if ($smallestN >= 8) {
+                        $isNormal = false;
+                        $predictedClass = 'Rabun Dekat';
+                        $recommendation = "Anda terindikasi mengalami Presbiopi/Hipermetropi (Rabun Dekat) karena batas membaca terkecil Anda adalah N{$smallestN}. Disarankan melakukan pemeriksaan lebih lanjut untuk ukuran kacamata baca Anda.";
+                        $friendlySummary = "Hasil tes menunjukkan kamu kemungkinan mengalami rabun dekat (Presbiopi). Yuk periksa lebih lanjut!";
+                    }
+                } elseif ($testType === 'distance') {
+                    if ($smallestRow > 20) {
+                        $isNormal = false;
+                        $predictedClass = 'Rabun Jauh';
+                        $recommendation = "Anda terindikasi mengalami Myopia (Rabun Jauh) karena hanya bisa membaca sampai baris 20/{$smallestRow}. Disarankan menggunakan kacamata dengan estimasi ukuran sekitar {$estimateMinus} Diopter. Konsultasikan dengan dokter spesialis mata untuk pemeriksaan refraksi yang lebih akurat.";
+                        $friendlySummary = "Hasil tes menunjukkan kamu kemungkinan mengalami rabun jauh (Miopi). Yuk periksa lebih lanjut!";
+                    }
+                } else {
+                    $conditionsList = [];
+                    if ($smallestRow > 20) {
+                        $conditionsList[] = 'Rabun Jauh';
+                    }
+                    if ($smallestN >= 8) {
+                        $conditionsList[] = 'Rabun Dekat';
+                    }
+                    
+                    if (!empty($conditionsList)) {
+                        $isNormal = false;
+                        $predictedClass = implode(' & ', $conditionsList);
+                        $recommendation = "Hasil tes komprehensif Anda menunjukkan adanya indikasi " . implode(' dan ', $conditionsList) . ". Silakan periksakan ke dokter spesialis mata untuk diagnosa lengkap.";
+                        $friendlySummary = "Hasil tes menunjukkan kamu mengalami kelainan refraksi (" . implode(' & ', $conditionsList) . "). Yuk periksa ke ahlinya!";
+                    }
+                }
+
+                if ($snellenData['astigmatism_found'] ?? false) {
+                    $isNormal = false;
+                    if ($predictedClass === 'Normal') {
+                        $predictedClass = 'Silinder';
+                        $recommendation = "Anda terindikasi mengalami Astigmatisme (Silinder). Disarankan melakukan pemeriksaan ke dokter mata untuk mendapatkan lensa silinder.";
+                        $friendlySummary = "Hasil tes menunjukkan mata kamu terindikasi silinder. Yuk periksa lebih lanjut!";
+                    } else {
+                        $predictedClass .= ' & Silinder';
+                        $recommendation .= " Serta terindikasi kelainan silinder (Astigmatisme).";
+                        $friendlySummary = "Hasil tes menunjukkan mata kamu terindikasi " . $predictedClass . ". Yuk periksa lebih lanjut!";
+                    }
                 }
 
                 $smartMock = [
-                    'visual_acuity' => $visualAcuity,
-                    'status' => $smallestRow <= 20 ? 'Normal' : 'Abnormal (Indikasi Rabun Jauh)',
-                    'description' => $smallestRow <= 20 
-                        ? 'Penglihatan Anda normal. Anda dapat membaca baris 20/20 dengan baik.' 
-                        : "Anda terindikasi mengalami Myopia (Rabun Jauh) karena hanya bisa membaca sampai baris 20/{$smallestRow}.",
-                    'recommendations' => [
-                        $smallestRow <= 20 
-                            ? 'Pertahankan kesehatan mata Anda.' 
-                            : "Disarankan menggunakan kacamata dengan estimasi ukuran sekitar {$estimateMinus} Diopter.",
-                        'Konsultasikan dengan dokter spesialis mata untuk pemeriksaan refraksi yang lebih akurat.',
-                    ],
-                    'mock_mode' => true,
+                    'predicted_class'     => $predictedClass,
+                    'confidence'          => 0.70,
+                    'visual_acuity'       => $visualAcuity,
+                    'snellen_decimal'     => $smallestRow > 0 ? round(20 / $smallestRow, 2) : 1.0,
+                    'recommendation'      => $recommendation,
+                    'friendly_summary'    => $friendlySummary,
+                    'action_required'     => !$isNormal,
+                    'can_consult_chatbot' => true,
+                    'mock_mode'           => true,
                 ];
 
                 if (env('USE_MOCK_AI', false)) {
@@ -78,7 +123,7 @@ class RefractionService
                             $aiResult = $this->openRouterService->analyzeSnellen($snellenData, $imageBase64);
                         } catch (\Exception $e2) {
                             $aiResult = $smartMock;
-                            $aiResult['description'] = "🤖 [MOCK MODE - API LIMIT] " . $smartMock['description'];
+                            $aiResult['recommendation'] = "🤖 [MOCK MODE - API LIMIT] " . $smartMock['recommendation'];
                             $aiResult['error'] = $e->getMessage();
                         }
                     }
@@ -113,7 +158,7 @@ class RefractionService
             $leftCyl = $data['left_eye_cylinder'] ?? 0;
 
             $conditions = [];
-            if ($rightSphere < 0 || $leftSphere < 0) $conditions[] = "Rabun Jauh (Miopia)";
+            if ($rightSphere < 0 || $leftSphere < 0) $conditions[] = "Rabun Jauh (Miopi)";
             if ($rightSphere > 0 || $leftSphere > 0) $conditions[] = "Rabun Dekat (Hipermetropia)";
             if ($rightCyl < 0 || $leftCyl < 0) $conditions[] = "Silinder (Astigmatisme)";
 
@@ -123,13 +168,15 @@ class RefractionService
                 : "Berdasarkan data input, Anda terindikasi mengalami " . implode(" dan ", $conditions) . ".";
 
             $smartMock = [
-                'status' => $status,
-                'description' => $desc,
-                'recommendations' => [
-                    'Gunakan kacamata sesuai dengan resep yang tertera.',
-                    'Lakukan kontrol rutin ke dokter mata setiap 6-12 bulan.',
-                ],
-                'mock_mode' => true,
+                'predicted_class'     => $status,
+                'confidence'          => 1.0,
+                'visual_acuity'       => $data['visual_acuity'],
+                'snellen_decimal'     => null,
+                'recommendation'      => $desc . ' Gunakan kacamata sesuai dengan resep yang tertera. Lakukan kontrol rutin ke dokter mata setiap 6-12 bulan.',
+                'friendly_summary'    => $desc,
+                'action_required'     => $status !== 'Normal',
+                'can_consult_chatbot' => true,
+                'mock_mode'           => true,
             ];
 
             if (env('USE_MOCK_AI', false)) {
@@ -143,7 +190,7 @@ class RefractionService
                         $aiResult = $this->openRouterService->analyzeRefraction($refraction->toArray());
                     } catch (\Exception $e2) {
                         $aiResult = $smartMock;
-                        $aiResult['description'] = "🤖 [MOCK MODE - API LIMIT] " . $smartMock['description'];
+                        $aiResult['recommendation'] = "🤖 [MOCK MODE - API LIMIT] " . $smartMock['recommendation'];
                         $aiResult['error'] = $e->getMessage();
                     }
                 }

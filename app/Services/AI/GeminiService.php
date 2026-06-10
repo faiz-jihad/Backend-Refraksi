@@ -641,18 +641,8 @@ class GeminiService
 
                 // Handle rate limiting (429 Too Many Requests)
                 if ($response->status() === 429) {
-                    $retryAfter = (int) $response->header('Retry-After', 0);
-                    $waitTime = $retryAfter > 0 ? $retryAfter : (int)($this->retryDelay / 1000);
-                    
-                    Log::warning('Gemini rate limit hit', [
-                        'retry_after' => $waitTime,
-                        'attempt' => $attempt + 1,
-                        'max_attempts' => $maxAttempts
-                    ]);
-                    
-                    sleep($waitTime);
-                    $attempt++;
-                    continue;
+                    Log::error("Gemini rate limit hit (429) for model {$this->model}. Throwing exception immediately to trigger fast model fallback.");
+                    throw new GeminiException('Terlalu banyak permintaan (429) ke Gemini AI. Beralih ke fallback.', 429);
                 }
 
                 // Handle server errors (5xx) - retryable
@@ -1078,32 +1068,56 @@ class GeminiService
     private function buildTextFallbackResponse(string $rawText): array
     {
         $lower = strtolower($rawText);
-
-        // Detect condition from keywords
         $predictedClass = 'Normal';
+        $hasAstigmatism = $this->hasAstigmatism($rawText);
         
         if (str_contains($lower, 'rabun jauh') || str_contains($lower, 'miopi') || str_contains($lower, 'myopia')) {
-            $predictedClass = (str_contains($lower, 'silinder') || str_contains($lower, 'astigmat')) 
-                ? 'Rabun Jauh & Silinder' 
-                : 'Rabun Jauh';
+            $predictedClass = $hasAstigmatism ? 'Rabun Jauh & Silinder' : 'Rabun Jauh';
         } elseif (str_contains($lower, 'rabun dekat') || str_contains($lower, 'hiper') || str_contains($lower, 'presbi')) {
-            $predictedClass = (str_contains($lower, 'silinder') || str_contains($lower, 'astigmat')) 
-                ? 'Rabun Dekat & Silinder' 
-                : 'Rabun Dekat';
-        } elseif (str_contains($lower, 'silinder') || str_contains($lower, 'astigmat')) {
+            $predictedClass = $hasAstigmatism ? 'Rabun Dekat & Silinder' : 'Rabun Dekat';
+        } elseif ($hasAstigmatism) {
             $predictedClass = 'Silinder';
         }
 
-        // Extract clean summary
-        $cleanText = preg_replace('/[{}\[\]":]/', '', $rawText);
-        $cleanText = preg_replace('/\s+/', ' ', trim($cleanText));
-        $recommendation = mb_substr($cleanText, 0, 500);
-        
-        if (empty($recommendation)) {
-            $recommendation = 'Berdasarkan analisis, disarankan untuk melakukan pemeriksaan ke dokter mata.';
+        // Try to extract only the recommendation content via regex
+        $recommendation = '';
+        if (preg_match('/(?:recommendation|rekomendasi|kondisi)\s*[:\-\s]+([\s\S]+?)(?=(?:action_required|friendly_summary|can_consult_chatbot|is_fallback|$))/i', $rawText, $matches)) {
+            $recommendation = trim($matches[1]);
+            $recommendation = rtrim($recommendation, '",\t\n\r ');
+        } else {
+            $cleanText = preg_replace('/[{}\[\]":]/', '', $rawText);
+            $cleanText = preg_replace('/\s+/', ' ', trim($cleanText));
+            $recommendation = mb_substr($cleanText, 0, 500) ?: 'Disarankan untuk melakukan pemeriksaan ke dokter mata.';
         }
 
-        return $this->buildFallbackResponse($predictedClass, $recommendation);
+        // Try to extract friendly summary
+        $friendlySummary = null;
+        if (preg_match('/friendly_summary\s*[:\-\s]+([\s\S]+?)(?=(?:action_required|can_consult_chatbot|is_fallback|$))/i', $rawText, $matches)) {
+            $friendlySummary = trim($matches[1]);
+            $friendlySummary = rtrim($friendlySummary, '",\t\n\r ');
+        }
+
+        $response = $this->buildFallbackResponse($predictedClass, $recommendation);
+        if ($friendlySummary) {
+            $response['friendly_summary'] = $friendlySummary;
+        }
+
+        return $response;
+    }
+
+    /**
+     * Helper to check for astigmatism while ignoring negative prefixes.
+     */
+    private function hasAstigmatism(string $text): bool
+    {
+        $lower = strtolower($text);
+        if (str_contains($lower, 'astigmat') || str_contains($lower, 'silinder')) {
+            if (preg_match('/(?:tidak|bukan|tanpa|no|negatif|tidak\s+terdeteksi)\s+(?:ada\s+)?(?:indikasi\s+)?(?:astigmat|silinder)/i', $lower)) {
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
 
     /**

@@ -56,6 +56,13 @@ TABEL ACUAN ESTIMASI DIOPTRIS MINUS (Miopi):
 - Snellen 20/80 (6/24): Sekitar -2.00 s.d -2.50
 - Snellen 20/200 (6/60): Di atas -4.00 atau lebih
 
+TABEL ACUAN ESTIMASI DIOPTRIS PLUS (Presbiopi / Rabun Dekat):
+- N5: 0.00 (Normal)
+- N6: Sekitar +1.00 Dioptri
+- N8: Sekitar +1.50 Dioptri
+- N10: Sekitar +2.00 Dioptri
+- N12: Sekitar +2.50 Dioptri atau lebih
+
 ATURAN DIAGNOSA:
 - Jika test_type == 'distance' DAN smallest_row_read >= 40 DAN astigmatism_found = false: kemungkinan besar Rabun Jauh (Miopi).
 - Jika test_type == 'near' DAN smallest_n_point >= 8 DAN astigmatism_found = false: kemungkinan besar Rabun Dekat (Hipermetropi/Presbiopi).

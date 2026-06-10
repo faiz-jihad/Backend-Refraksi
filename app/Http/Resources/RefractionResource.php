@@ -13,24 +13,28 @@ class RefractionResource extends JsonResource
     {
         $ai = $this->ai_recommendations ?? [];
         
+        $predictedClass = $ai['predicted_class'] ?? $ai['condition_category'] ?? $ai['kategori'] ?? 'Normal';
+        $recommendation = $ai['recommendation'] ?? $ai['kondisi'] ?? $ai['description'] ?? null;
+        $actionRequired = $ai['action_required'] ?? ($predictedClass !== 'Normal');
+
         return [
             'id'              => $this->id,
-            'predicted_class' => $ai['predicted_class'] ?? $ai['condition_category'] ?? 'Normal',
+            'predicted_class' => $predictedClass,
             'confidence'      => $ai['confidence'] ?? 1.0,
             'visual_acuity'   => $this->visual_acuity,
             'snellen_decimal' => $ai['snellen_decimal'] ?? null,
-            'recommendation'  => $ai['recommendation'] ?? $ai['kondisi'] ?? null,
+            'recommendation'  => $recommendation,
             'friendly_summary' => $ai['friendly_summary'] ?? null,
-            'action_required' => $ai['action_required'] ?? (($ai['predicted_class'] ?? 'Normal') !== 'Normal'),
+            'action_required' => $actionRequired,
             'image_url'       => $this->image_path ? '/storage/' . $this->image_path : null,
             'created_at'      => $this->created_at ? $this->created_at->toIso8601String() : null,
             'results'         => [
-                'predicted_class' => $ai['predicted_class'] ?? $ai['condition_category'] ?? 'Normal',
+                'predicted_class' => $predictedClass,
                 'visual_acuity'   => $this->visual_acuity,
                 'snellen_decimal' => $ai['snellen_decimal'] ?? null,
-                'recommendation'  => $ai['recommendation'] ?? $ai['kondisi'] ?? null,
+                'recommendation'  => $recommendation,
                 'friendly_summary' => $ai['friendly_summary'] ?? null,
-                'action_required' => $ai['action_required'] ?? (($ai['predicted_class'] ?? 'Normal') !== 'Normal'),
+                'action_required' => $actionRequired,
             ]
         ];
     }
