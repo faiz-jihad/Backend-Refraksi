@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services\AI;
 
 use App\Exceptions\GeminiException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 
 class OpenRouterService
@@ -16,397 +18,626 @@ class OpenRouterService
     private string $baseUrl;
     private int $maxRetries;
     private int $retryDelay;
-
-    private const FALLBACK_MODELS = [
-        'nvidia/nemotron-nano-12b-v2-vl:free',
-        'qwen/qwen3-next-80b-a3b-instruct:free',
-        'nvidia/nemotron-nano-9b-v2:free',
-        'openai/gpt-oss-120b:free',
-        'openai/gpt-oss-20b:free',
-        'qwen/qwen3-coder:free',
-        'meta-llama/llama-3.3-70b-instruct:free',
-        'meta-llama/llama-3.2-3b-instruct:free',
-        'openrouter/free',
-    ];
+    private int $timeout;
+    private bool $fallbackEnabled;
+    
+    // HTTP Referer untuk OpenRouter ranking (opsional tapi direkomendasikan)
+    private string $httpReferer;
+    private string $appTitle;
 
     /**
-     * Get list of models to try in order of preference.
+     * Model fallback yang akan dicoba secara berurutan.
+     * Diurutkan dari yang paling capable ke yang paling ringan.
      */
-    private function getModelsToTry(): array
-    {
-        $models = [$this->model];
-        foreach (self::FALLBACK_MODELS as $m) {
-            if ($m !== $this->model) {
-                $models[] = $m;
-            }
-        }
-        return $models;
-    }
+    private const FALLBACK_MODELS = [
+        'google/gemini-2.0-flash-lite-preview-02-05:free',  // Gemini Flash (paling capable)
+        'meta-llama/llama-3.3-70b-instruct:free',            // Llama 70B
+        'qwen/qwen3-next-80b-a3b-instruct:free',             // Qwen 80B MoE
+        'meta-llama/llama-3.2-3b-instruct:free',             // Llama 3B (ringan)
+    ];
 
     public function __construct()
     {
-        $this->apiKey     = (string) (config('services.openrouter.api_key') ?? '');
-        $this->model      = (string) (config('services.openrouter.model') ?? 'openrouter/free');
-        $this->baseUrl    = rtrim((string) (config('services.openrouter.base_url') ?? 'https://openrouter.ai/api/v1'), '/');
-        $this->maxRetries = (int)    (config('services.openrouter.max_retries') ?? 3);
-        $this->retryDelay = (int)    (config('services.openrouter.retry_delay') ?? 1000);
+        $this->apiKey     = config('services.openrouter.api_key', '');
+        $this->model      = config('services.openrouter.model', 'google/gemini-2.0-flash-lite-preview-02-05:free');
+        $this->baseUrl    = rtrim(config('services.openrouter.base_url', 'https://openrouter.ai/api/v1'), '/');
+        $this->maxRetries = (int) config('services.openrouter.max_retries', 2);
+        $this->retryDelay = (int) config('services.openrouter.retry_delay', 1000);
+        $this->timeout    = (int) config('services.openrouter.timeout', 30);
+        $this->fallbackEnabled = config('services.openrouter.fallback_enabled', true);
+        
+        // OpenRouter ranking headers (helps with rate limits on free models)
+        $this->httpReferer = config('app.url', 'https://mataceria.app');
+        $this->appTitle    = config('app.name', 'MataCeria AI');
     }
 
     /**
-     * Validate configuration.
+     * Validate service configuration.
      */
     private function validateConfiguration(): void
     {
         if (empty($this->apiKey)) {
-            throw new GeminiException('OpenRouter API key tidak dikonfigurasi. Silakan set OPENROUTER_API_KEY di .env');
+            throw new GeminiException(
+                'OpenRouter API key tidak dikonfigurasi. Silakan set OPENROUTER_API_KEY di .env'
+            );
         }
+        
         if (empty($this->model)) {
             throw new GeminiException('Model OpenRouter tidak dikonfigurasi');
         }
     }
 
     /**
+     * Get list of models to try in order of preference.
+     * Primary model first, then fallbacks (excluding duplicates).
+     */
+    private function getModelsToTry(): array
+    {
+        if (!$this->fallbackEnabled) {
+            return [$this->model];
+        }
+        
+        $models = [$this->model];
+        foreach (self::FALLBACK_MODELS as $fallback) {
+            if ($fallback !== $this->model && !in_array($fallback, $models, true)) {
+                $models[] = $fallback;
+            }
+        }
+        return $models;
+    }
+
+    /**
      * Analyze refraction data using OpenRouter.
+     *
+     * @param array $refractionData
+     * @return array
+     * @throws GeminiException
      */
     public function analyzeRefraction(array $refractionData): array
     {
+        $this->validateRefractionData($refractionData);
+        
         $prompt = $this->buildRefractionPrompt($refractionData);
-        $raw = $this->makeRequest($prompt);
+        $raw = $this->generateStructuredContent($prompt);
+        
         return $this->parseJsonResponse($raw);
     }
 
     /**
      * Analyze Snellen test data using OpenRouter.
+     *
+     * @param array $snellenData
+     * @param string|null $imageBase64 (not used for OpenRouter text-only)
+     * @return array
+     * @throws GeminiException
      */
     public function analyzeSnellen(array $snellenData, ?string $imageBase64 = null): array
     {
+        $this->validateSnellenData($snellenData);
+        
+        // OpenRouter free models mostly don't support vision
+        // For production, consider upgrading to a paid vision model
+        if ($imageBase64) {
+            Log::warning('OpenRouter: Image analysis requested but using text-only mode');
+        }
+        
         $prompt = $this->buildSnellenPrompt($snellenData);
-        // OpenRouter does not support multimodal images directly; we ignore $imageBase64 for now.
-        $raw = $this->makeRequest($prompt);
+        $raw = $this->generateStructuredContent($prompt);
+        
         return $this->parseJsonResponse($raw);
     }
 
     /**
-     * Chat menggunakan OpenRouter.
+     * Chat using OpenRouter with conversation history.
+     *
+     * @param string $message
+     * @param array $history
+     * @param array $options Additional options (temperature, max_tokens, etc.)
+     * @return string
+     * @throws GeminiException
      */
-    public function chat(string $message, array $history = []): string
+    public function chat(string $message, array $history = [], array $options = []): string
+    {
+        if (trim($message) === '') {
+            throw new InvalidArgumentException('Pesan tidak boleh kosong');
+        }
+
+        $this->validateConfiguration();
+        
+        $messages = $this->buildChatMessages($message, $history);
+        
+        $temperature = $options['temperature'] ?? 0.7;
+        $maxTokens = $options['max_tokens'] ?? 1024;
+        
+        $models = $this->getModelsToTry();
+        $lastException = null;
+
+        foreach ($models as $currentModel) {
+            try {
+                $payload = [
+                    'model'       => $currentModel,
+                    'messages'    => $messages,
+                    'temperature' => $temperature,
+                    'max_tokens'  => $maxTokens,
+                ];
+
+                Log::info("OpenRouter chat attempt", ['model' => $currentModel]);
+                
+                $response = $this->sendChatRequest($payload);
+                
+                $content = $response['choices'][0]['message']['content'] ?? null;
+                
+                if (empty($content)) {
+                    Log::warning("OpenRouter: Empty content from {$currentModel}, trying next model");
+                    continue;
+                }
+                
+                Log::info("OpenRouter chat success", [
+                    'model' => $currentModel,
+                    'tokens_used' => $response['usage']['total_tokens'] ?? 'unknown'
+                ]);
+                
+                return $content;
+                
+            } catch (GeminiException $e) {
+                Log::warning("OpenRouter chat failed for {$currentModel}: " . $e->getMessage());
+                $lastException = $e;
+                continue;
+            } catch (\Exception $e) {
+                Log::error("OpenRouter chat unexpected error for {$currentModel}: " . $e->getMessage());
+                $lastException = new GeminiException(
+                    "Gagal terhubung ke OpenRouter ({$currentModel}): " . $e->getMessage()
+                );
+                continue;
+            }
+        }
+
+        throw $lastException ?? new GeminiException(
+            'Semua model OpenRouter tidak tersedia. Silakan coba lagi nanti.'
+        );
+    }
+
+    /**
+     * Generate structured JSON content (for analysis endpoints).
+     * This method is optimized for JSON responses.
+     *
+     * @param string $userPrompt The analysis prompt
+     * @return array Raw response array from API
+     * @throws GeminiException
+     */
+    private function generateStructuredContent(string $userPrompt): array
     {
         $this->validateConfiguration();
         
+        $systemPrompt = "Anda adalah AI analis data kesehatan mata yang presisi. " .
+                        "TUGAS: Berikan respons HANYA dalam format JSON valid tanpa teks tambahan. " .
+                        "TIDAK BOLEH ada markdown, code blocks, atau teks di luar JSON. " .
+                        "Jika ragu dengan nilai, gunakan null. Pastikan JSON bisa di-parse langsung.";
+        
+        $messages = [
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => $userPrompt],
+        ];
+        
+        $payload = [
+            'model'       => $this->model,
+            'messages'    => $messages,
+            'temperature' => 0.2,      // Low temperature for consistent JSON
+            'max_tokens'  => 512,
+            'response_format' => ['type' => 'json_object'], // OpenRouter supports this for some models
+        ];
+
+        return $this->sendChatRequest($payload);
+    }
+
+    /**
+     * Send a chat completion request with retry and fallback logic.
+     *
+     * @param array $payload Request payload
+     * @param string|null $modelOverride Specific model to use (overrides payload model)
+     * @return array Decoded response JSON
+     * @throws GeminiException
+     */
+    private function sendChatRequest(array $payload, ?string $modelOverride = null): array
+    {
+        if ($modelOverride) {
+            $payload['model'] = $modelOverride;
+        }
+        
+        $attempt = 0;
+        $lastException = null;
+        
+        while ($attempt <= $this->maxRetries) {
+            try {
+                $response = Http::withHeaders($this->getRequestHeaders())
+                    ->timeout($this->timeout)
+                    ->post("{$this->baseUrl}/chat/completions", $payload);
+
+                // Success
+                if ($response->successful()) {
+                    $data = $response->json();
+                    
+                    // Validate response structure
+                    if (!isset($data['choices'][0]['message']['content'])) {
+                        throw new GeminiException('Respons OpenRouter tidak valid: missing content');
+                    }
+                    
+                    return $data;
+                }
+
+                // Rate limiting (429)
+                if ($response->status() === 429) {
+                    $retryAfter = (int) $response->header('Retry-After', $this->retryDelay / 1000);
+                    Log::warning('OpenRouter rate limit', [
+                        'retry_after' => $retryAfter,
+                        'attempt'     => $attempt + 1,
+                        'model'       => $payload['model'] ?? 'unknown',
+                    ]);
+                    
+                    if ($retryAfter > 60) {
+                        // Too long to wait, skip to next model
+                        throw new GeminiException('Rate limit terlalu lama (>60s)');
+                    }
+                    
+                    sleep(max(1, $retryAfter));
+                    $attempt++;
+                    continue;
+                }
+
+                // Provider errors (5xx) - OpenRouter specific
+                if ($response->status() >= 500) {
+                    $errorMessage = $response->json('error.metadata.raw') ?? 
+                                    $response->json('error.message') ?? 
+                                    'Unknown server error';
+                    
+                    Log::error('OpenRouter provider error', [
+                        'status'  => $response->status(),
+                        'model'   => $payload['model'] ?? 'unknown',
+                        'error'   => $errorMessage,
+                    ]);
+                    
+                    throw new GeminiException(
+                        "Provider error untuk model {$payload['model']}: {$errorMessage}",
+                        $response->status()
+                    );
+                }
+
+                // Client errors (4xx except 429)
+                $errorData = $response->json();
+                $errorMessage = $errorData['error']['message'] ?? 
+                                $errorData['error']['metadata']['raw'] ?? 
+                                'Unknown client error';
+                
+                Log::error('OpenRouter client error', [
+                    'status'  => $response->status(),
+                    'model'   => $payload['model'] ?? 'unknown',
+                    'error'   => $errorMessage,
+                ]);
+                
+                throw new GeminiException($errorMessage, $response->status());
+
+            } catch (ConnectionException $e) {
+                Log::error('OpenRouter connection error', [
+                    'message' => $e->getMessage(),
+                    'attempt' => $attempt + 1,
+                ]);
+                
+                if ($attempt >= $this->maxRetries) {
+                    throw new GeminiException(
+                        'Tidak dapat terhubung ke OpenRouter: ' . $e->getMessage()
+                    );
+                }
+                
+                $this->exponentialBackoff($attempt);
+                $attempt++;
+                continue;
+            }
+        }
+        
+        throw $lastException ?? new GeminiException('OpenRouter tidak merespons setelah beberapa percobaan');
+    }
+
+    /**
+     * Get OpenRouter specific HTTP headers.
+     */
+    private function getRequestHeaders(): array
+    {
+        return [
+            'Authorization'     => 'Bearer ' . $this->apiKey,
+            'Content-Type'      => 'application/json',
+            'HTTP-Referer'      => $this->httpReferer,   // OpenRouter ranking
+            'X-Title'           => $this->appTitle,       // App identification
+            'X-Request-ID'      => uniqid('mata-', true), // Idempotency
+        ];
+    }
+
+    /**
+     * Build messages array for chat completions.
+     */
+    private function buildChatMessages(string $message, array $history): array
+    {
         $messages = [
             [
                 'role'    => 'system',
-                'content' => "Anda adalah 'MataCeria AI', asisten kesehatan mata yang ramah, profesional, dan empatik.\n\n" .
-                             "BAHASA:\n" .
-                             "- WAJIB gunakan Bahasa Indonesia dalam SETIAP respons, tanpa pengecualian.\n" .
-                             "- Jangan pernah menjawab dalam bahasa Inggris atau bahasa lain.\n\n" .
-                             "GAYA KOMUNIKASI:\n" .
-                             "- Gunakan bahasa Indonesia yang santai tapi sopan (sapaan: 'Halo Kak!', penutup: 'Semoga sehat selalu! 😊').\n" .
-                             "- Gunakan emoji secukupnya untuk suasana hangat (😊, 👁️, ✨, 💙).\n" .
-                             "- Berikan motivasi atau kata penyemangat di akhir setiap respons.\n" .
-                             "- Jika user bertanya di luar topik kesehatan mata, arahkan kembali dengan sopan.\n\n" .
-                             "FORMAT RESPONS:\n" .
-                             "- Gunakan Markdown (bold, bullet points) agar tampilan di aplikasi rapi.\n" .
-                             "- Pisahkan poin-poin penting dengan baris baru.\n" .
-                             "- Berikan tips praktis yang bisa langsung dilakukan (contoh: aturan 20-20-20).",
+                'content' => $this->getSystemPrompt(),
             ],
         ];
         
+        // Add conversation history
         foreach ($history as $msg) {
-            $role = $msg['role'] === 'model' ? 'assistant' : $msg['role'];
+            if (!isset($msg['role'], $msg['content'])) {
+                continue;
+            }
+            
+            // Convert 'model' role to 'assistant' (OpenRouter standard)
+            $role = match ($msg['role']) {
+                'model'     => 'assistant',
+                'assistant' => 'assistant',
+                'user'      => 'user',
+                'system'    => 'system',
+                default     => null,
+            };
+            
+            if ($role === null) {
+                continue; // Skip invalid roles
+            }
+            
             $messages[] = [
-                'role' => $role,
+                'role'    => $role,
                 'content' => $msg['content'],
             ];
         }
         
+        // Add current user message
         $messages[] = [
-            'role' => 'user',
+            'role'    => 'user',
             'content' => $message,
         ];
 
-        $models = $this->getModelsToTry();
-        $lastException = null;
-
-        foreach ($models as $currentModel) {
-            Log::info("Attempting OpenRouter chat using model: {$currentModel}");
-            $payload = [
-                'model' => $currentModel,
-                'messages' => $messages,
-                'temperature' => 0.7,
-            ];
-            
-            $attempt = 0;
-            do {
-                try {
-                    $response = \Illuminate\Support\Facades\Http::withHeaders([
-                        'Authorization' => 'Bearer ' . $this->apiKey,
-                        'Content-Type' => 'application/json',
-                    ])->timeout(30)->post("{$this->baseUrl}/chat/completions", $payload);
-
-                    if ($response->successful()) {
-                        $decoded = $response->json();
-                        return $decoded['choices'][0]['message']['content'] ?? 'Tidak ada respons dari AI.';
-                    }
-
-                    if ($response->status() === 429) {
-                        $retryAfter = (int) $response->header('Retry-After', $this->retryDelay / 1000);
-                        Log::error("OpenRouter chat rate limit hit for {$currentModel}, retrying", ['retry_after' => $retryAfter, 'attempt' => $attempt]);
-                        sleep($retryAfter);
-                        continue;
-                    }
-
-                    $msg = $response->json('error.message') ?? 'OpenRouter API error';
-                    Log::error("OpenRouter API error in chat for model {$currentModel}", ['status' => $response->status(), 'message' => $msg]);
-                    $lastException = new \App\Exceptions\GeminiException($msg, $response->status());
-                    break; // Try next model
-                } catch (\Exception $e) {
-                    Log::error("OpenRouter chat exception for model {$currentModel}", ['message' => $e->getMessage(), 'attempt' => $attempt]);
-                    $lastException = new \App\Exceptions\GeminiException("Gagal terhubung ke OpenRouter ({$currentModel}): " . $e->getMessage());
-                    if ($attempt >= $this->maxRetries) {
-                        break; // Try next model
-                    }
-                    usleep($this->retryDelay * 1000);
-                }
-                $attempt++;
-            } while ($attempt <= $this->maxRetries);
-        }
-
-        throw $lastException ?? new \App\Exceptions\GeminiException('OpenRouter service tidak tersedia saat ini.');
+        return $messages;
     }
 
     /**
-     * Build a prompt for refraction analysis (copied from GeminiService).
+     * Get system prompt for chat mode.
+     */
+    private function getSystemPrompt(): string
+    {
+        return <<<PROMPT
+Anda adalah 'MataCeria AI', asisten kesehatan mata yang ramah, profesional, dan empatik. 
+Anda membantu pengguna memahami kondisi kesehatan mata dan memberikan informasi edukatif.
+
+ATURAN BAHASA:
+- WAJIB gunakan Bahasa Indonesia dalam SETIAP respons, tanpa pengecualian.
+- Jangan pernah menjawab dalam bahasa Inggris atau bahasa lain.
+- Gunakan bahasa yang mudah dipahami orang awam.
+
+GAYA KOMUNIKASI:
+- Gunakan bahasa Indonesia yang santai tapi sopan.
+- Sapaan pembuka yang hangat seperti 'Halo Kak!'
+- Gunakan emoji secukupnya (😊, 👁️, ✨, 💙).
+- Berikan motivasi atau kata penyemangat di akhir respons.
+- Jika user bertanya di luar topik kesehatan mata, arahkan kembali dengan sopan.
+
+FORMAT RESPONS:
+- Gunakan Markdown (bold, bullet points) agar tampilan rapi.
+- Pisahkan poin-poin penting dengan baris baru.
+- Berikan tips praktis (contoh: aturan 20-20-20).
+- JANGAN memberikan diagnosa medis final, selalu sarankan konsultasi ke dokter.
+
+BATASAN:
+- Jangan memberikan resep obat atau ukuran kacamata yang spesifik.
+- Selalu ingatkan bahwa analisis ini adalah skrining awal.
+- Jika kondisi tampak serius, kuatkan saran untuk segera ke dokter mata.
+PROMPT;
+    }
+
+    /**
+     * Build refraction analysis prompt.
      */
     private function buildRefractionPrompt(array $data): string
     {
         $formatted = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        
         return <<<PROMPT
-Anda adalah 'MataCeria AI', ahli optometri digital yang ramah dan sangat komunikatif.
-
-TUGAS ANDA:
-1. Menganalisis data refraksi mata (Ukuran Kacamata/Softlens) berikut.
-2. Memberikan penjelasan yang sangat mudah dipahami tentang kondisi mata (Myopia/Rabun Jauh jika minus, Hyperopia/Rabun Dekat jika plus).
-3. Memberikan deskripsi hasil yang aplikatif dan menenangkan.
+Analisis data refraksi mata berikut dan berikan hasil dalam format JSON:
 
 DATA REFRAKSI:
 {$formatted}
 
-FORMAT RESPONS (JSON valid):
+PANDUAN:
+- Sphere (S) minus (-): Rabun Jauh (Miopi)
+- Sphere (S) plus (+): Rabun Dekat (Hipermetropi/Presbiopi)
+- Cylinder (C): Astigmatisme (Silinder)
+
+OUTPUT (JSON ONLY):
 {
-  "kondisi": "Deskripsi singkat dan ramah",
-  "kategori": "Normal | Rabun Jauh | Rabun Dekat | Silinder | Komplikasi",
-  "tingkat_keparahan": "Normal | Ringan | Sedang | Berat",
-  "rekomendasi": ["Saran praktis 1", "Saran praktis 2"],
-  "saran_kacamata": "Penjelasan mengenai lensa yang dibutuhkan",
+  "kondisi": "Deskripsi singkat kondisi mata",
+  "kategori": "Normal|Rabun Jauh|Rabun Dekat|Silinder|Komplikasi",
+  "tingkat_keparahan": "Normal|Ringan|Sedang|Berat",
+  "rekomendasi": ["Saran 1", "Saran 2"],
+  "saran_kacamata": "Penjelasan lensa yang dibutuhkan",
   "perlu_ke_dokter": true,
   "tips_kesehatan": "Tips menjaga kesehatan mata",
-  "pesan_motivasi": "Kata-kata penyemangat",
-  "friendly_summary": "Ringkasan sangat singkat (1-2 kalimat)"
+  "pesan_motivasi": "Kata penyemangat",
+  "friendly_summary": "Ringkasan 1-2 kalimat untuk TTS"
 }
 PROMPT;
     }
 
     /**
-     * Build a prompt for Snellen analysis (copied from GeminiService).
+     * Build Snellen test analysis prompt.
      */
     private function buildSnellenPrompt(array $data): string
     {
         $formatted = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        
         $smallestRow  = $data['smallest_row_read'] ?? 200;
         $smallestN    = $data['smallest_n_point'] ?? 12;
-        $astigmatism  = ($data['astigmatism_found'] ?? false) ? 'Ya (terdeteksi)' : 'Tidak';
+        $astigmatism  = ($data['astigmatism_found'] ?? false) ? 'Ya' : 'Tidak';
         $duochrome    = $data['duochrome_result'] ?? 'tidak ada data';
         $testType     = $data['test_type'] ?? 'distance';
         $avgDistance  = $data['avg_distance_cm'] ?? 40;
+
         return <<<PROMPT
-Anda adalah 'MataCeria AI', asisten skrining kesehatan mata yang sangat ahli.
+Analisis hasil tes refraksi digital berikut:
 
-TUGAS ANDA:
-1. Menganalisis hasil tes refraksi digital berikut secara mendalam.
-2. Memberikan diagnosa awal yang TEPAT dan ramah (bukan diagnosa medis final).
-3. Menentukan kondisi utama: Miopi (Rabun Jauh), Hipermetropi/Presbiopi (Rabun Dekat), Astigmatisme (Silinder), atau Normal.
-4. Memberikan penjelasan sangat mudah dipahami orang awam dengan gaya bahasa seperti sahabat yang peduli.
-
-DATA HASIL TES LENGKAP:
+DATA TES:
 {$formatted}
 
-PANDUAN INTERPRETASI KHUSUS UNTUK TES INI:
-- Jarak rata-rata pengujian: {$avgDistance} cm
+KONTEKS:
+- Jarak tes: {$avgDistance} cm
 - Tipe tes: {$testType}
-- Skor Snellen terkecil yang terbaca: 20/{$smallestRow}
-- Poin ketajaman dekat terkecil yang terbaca: N{$smallestN}
-- Indikasi Silinder/Astigmatisme: {$astigmatism}
-- Hasil tes duochrome: {$duochrome}
+- Baris terkecil terbaca: 20/{$smallestRow}
+- Poin dekat terkecil: N{$smallestN}
+- Indikasi Silinder: {$astigmatism}
+- Hasil Duochrome: {$duochrome}
+
+ACUAN ESTIMASI:
+- 20/20: Normal (0.00 D)
+- 20/25: -0.25 s.d -0.50
+- 20/30: -0.50 s.d -1.00
+- 20/40: -1.00 s.d -1.50
+- 20/60: -1.50 s.d -2.00
+- 20/80: -2.00 s.d -2.50
+- 20/200+: Di atas -4.00
 
 ATURAN DIAGNOSA:
-- Jika test_type == 'distance' DAN smallest_row_read >= 40 DAN astigmatism_found = false: kemungkinan besar Rabun Jauh (Miopi). JANGAN diagnosa Rabun Dekat jika test_type adalah 'distance'.
-- Jika test_type == 'near' DAN smallest_n_point >= 8 DAN astigmatism_found = false: kemungkinan besar Rabun Dekat (Hipermetropi/Presbiopi). JANGAN diagnosa Rabun Jauh jika test_type adalah 'near'.
-- Jika test_type == 'comprehensive': pertimbangkan SEMUA data. Jika smallest_row_read >= 40 maka Rabun Jauh. Jika smallest_n_point >= 8 maka Rabun Dekat.
-- Jika astigmatism_found = true: Silinder (Astigmatisme) - bisa kombinasi dengan Rabun Jauh/Dekat.
+- test_type 'distance' + smallest_row_read >= 40 = Rabun Jauh
+- test_type 'near' + smallest_n_point >= 8 = Rabun Dekat
+- test_type 'comprehensive' = pertimbangkan semua data
+- astigmatism_found = true = Silinder (bisa kombinasi)
 
-FORMAT RESPONS (JSON valid TANPA markdown, TANPA teks lain):
+OUTPUT (JSON ONLY):
 {
-  "predicted_class": "Normal | Rabun Jauh | Rabun Dekat | Silinder | Rabun Jauh & Silinder | Rabun Dekat & Silinder",
-  "confidence": 0.90,
+  "predicted_class": "Normal|Rabun Jauh|Rabun Dekat|Silinder|Rabun Jauh & Silinder|Rabun Dekat & Silinder",
+  "confidence": 0.85,
   "visual_acuity": "20/{$smallestRow}",
   "snellen_decimal": 0.67,
-  "recommendation": "Berikan penjelasan yang mendalam, spesifik, dan aplikatif namun tetap PADAT dan tidak bertele-tele (untuk menghemat kuota). Gunakan gaya bicara ramah. Wajib sertakan: 1. Detail kondisi hasil tes. 2. Estimasi kasar ukuran kacamata yang dibutuhkan jika tidak normal (misal: perkiraan Spheris -1.00 D jika hasil 20/100, atau ukuran plus/silinder jika terindikasi) beserta catatan bahwa ini hanya perkiraan awal skrining dan bukan resep medis final. 3. Saran tindakan konkret (misal: 'Periksa ke dokter' atau 'Perlu kacamata'). 4. Tips praktis (misal: aturan 20-20-20). JANGAN bertele-tele.",
+  "recommendation": "Penjelasan padat: kondisi, estimasi ukuran lensa, saran konkret, tips",
   "action_required": true,
   "can_consult_chatbot": true,
-  "friendly_summary": "Ringkasan hasil tes dalam 1-2 kalimat ramah."
+  "friendly_summary": "Ringkasan 1-2 kalimat untuk TTS"
 }
 PROMPT;
     }
 
     /**
-     * Make request to OpenRouter API with retry logic.
+     * Validate refraction data.
      */
-    private function makeRequest(string $prompt, int $timeout = 30): string
+    private function validateRefractionData(array $data): void
     {
-        $this->validateConfiguration();
-        $models = $this->getModelsToTry();
-        $lastException = null;
-
-        foreach ($models as $currentModel) {
-            Log::info("Attempting OpenRouter request using model: {$currentModel}");
-            $payload = [
-                'model' => $currentModel,
-                'messages' => [
-                    ['role' => 'system', 'content' => 'You are a helpful assistant that returns only the JSON response without any extra text.'],
-                    ['role' => 'user', 'content' => $prompt],
-                ],
-                'temperature' => 0.2,
-                'max_tokens' => 512,
-            ];
-            
-            $attempt = 0;
-            $modelSuccessful = false;
-            $responseBody = '';
-            
-            do {
-                try {
-                    $response = Http::withHeaders([
-                        'Authorization' => 'Bearer ' . $this->apiKey,
-                        'Content-Type' => 'application/json',
-                    ])->timeout($timeout)->post("{$this->baseUrl}/chat/completions", $payload);
-
-                    if ($response->successful()) {
-                        $responseBody = $response->body();
-                        $modelSuccessful = true;
-                        break;
-                    }
-
-                    if ($response->status() === 429) {
-                        $retryAfter = (int) $response->header('Retry-After', $this->retryDelay / 1000);
-                        Log::error("OpenRouter rate limit hit for {$currentModel}, retrying", ['retry_after' => $retryAfter, 'attempt' => $attempt]);
-                        sleep($retryAfter);
-                        continue;
-                    }
-
-                    // Other HTTP errors (e.g. 400, 500, 503)
-                    $msg = $response->json('error.message') ?? 'OpenRouter API error';
-                    Log::error("OpenRouter API error for model {$currentModel}", ['status' => $response->status(), 'message' => $msg]);
-                    $lastException = new GeminiException($msg, $response->status());
-                    // Break the attempt loop to try the next model
-                    break;
-                } catch (\Exception $e) {
-                    Log::error("OpenRouter request exception for model {$currentModel}", ['message' => $e->getMessage(), 'attempt' => $attempt]);
-                    $lastException = new GeminiException("Gagal terhubung ke OpenRouter ({$currentModel}): " . $e->getMessage());
-                    if ($attempt >= $this->maxRetries) {
-                        break; // Try the next model
-                    }
-                    usleep($this->retryDelay * 1000);
-                }
-                $attempt++;
-            } while ($attempt <= $this->maxRetries);
-            
-            if ($modelSuccessful) {
-                return $responseBody;
+        $requiredFields = ['right_eye_sphere', 'left_eye_sphere', 'visual_acuity'];
+        
+        foreach ($requiredFields as $field) {
+            if (!isset($data[$field])) {
+                throw new InvalidArgumentException(
+                    "Data refraksi tidak lengkap: {$field} harus diisi"
+                );
             }
         }
-
-        throw $lastException ?? new GeminiException('OpenRouter service tidak tersedia saat ini.');
     }
 
     /**
-     * Parse JSON response similar to GeminiService.
-     * Tidak pernah throw exception — selalu kembalikan array valid.
+     * Validate Snellen data.
      */
-    private function parseJsonResponse(string $raw): array
+    private function validateSnellenData(array $data): void
     {
-        Log::info('OpenRouter Raw Response Received', [
-            'length'  => strlen($raw),
-            'preview' => mb_substr($raw, 0, 250),
+        $requiredFields = ['smallest_row_read', 'test_type'];
+        
+        foreach ($requiredFields as $field) {
+            if (!isset($data[$field])) {
+                throw new InvalidArgumentException(
+                    "Data Snellen tidak lengkap: {$field} harus diisi"
+                );
+            }
+        }
+
+        $validTestTypes = ['distance', 'near', 'comprehensive'];
+        if (!in_array($data['test_type'], $validTestTypes)) {
+            throw new InvalidArgumentException(
+                'Tipe tes tidak valid. Harus: ' . implode(', ', $validTestTypes)
+            );
+        }
+    }
+
+    /**
+     * Apply exponential backoff delay.
+     */
+    private function exponentialBackoff(int $attempt): void
+    {
+        $delay = $this->retryDelay * (2 ** $attempt); // 1s, 2s, 4s...
+        $jitter = rand(0, 500); // Add jitter ±500ms
+        
+        usleep(($delay + $jitter) * 1000);
+    }
+
+    // ============================================================================
+    // JSON PARSING (sama seperti sebelumnya, tapi diadaptasi untuk OpenRouter)
+    // ============================================================================
+
+    /**
+     * Parse JSON response from OpenRouter.
+     * Never throws exception — always returns valid array.
+     */
+    private function parseJsonResponse(array $apiResponse): array
+    {
+        $content = $apiResponse['choices'][0]['message']['content'] ?? '';
+        
+        Log::debug('OpenRouter content received', [
+            'length'  => strlen($content),
+            'preview' => mb_substr($content, 0, 300),
         ]);
 
-        // Log the full response on debug level only to save production disk space/io
-        Log::debug('OpenRouter Full Raw Response Payload:', ['payload' => $raw]);
-
-        if (empty(trim($raw))) {
-            Log::error('OpenRouter returned completely empty response');
+        if (empty(trim($content))) {
+            Log::error('OpenRouter returned empty content');
             return $this->buildFallbackResponse('Normal', 'AI tidak memberikan analisis. Silakan coba lagi.');
         }
 
-        $decoded = json_decode(trim($raw), true);
-        if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
-            Log::error('OpenRouter JSON Parse failed for main payload: ' . json_last_error_msg(), [
-                'raw_payload' => $raw
-            ]);
-            return $this->buildFallbackResponse('Normal', 'Gagal mem-parse respons utama dari OpenRouter.');
-        }
-        
-        $content = $decoded['choices'][0]['message']['content'] ?? '';
-        if (empty(trim($content))) {
-            Log::error('OpenRouter message content is empty', ['decoded_payload' => $decoded]);
-            return $this->buildFallbackResponse('Normal', 'Konten respons OpenRouter kosong.');
+        // Strategy 1: Direct JSON parse
+        $decoded = json_decode(trim($content), true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $this->validateAndEnhanceResponse($decoded);
         }
 
-        // Strategy 1: Content is already pure JSON
-        $result = json_decode(trim($content), true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($result)) {
-            return $result;
-        }
-
-        // Strategy 2: Extract JSON from various formats (markdown, mixed text)
+        // Strategy 2: Extract JSON from markdown
         $extracted = $this->extractJsonFromResponse($content);
-        $result = json_decode($extracted, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($result)) {
-            return $result;
+        $decoded = json_decode($extracted, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $this->validateAndEnhanceResponse($decoded);
         }
 
-        // Strategy 3: Sanitize and try again
+        // Strategy 3: Sanitize and retry
         $sanitized = $this->sanitizeJsonString($extracted);
-        $result = json_decode($sanitized, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($result)) {
-            return $result;
+        $decoded = json_decode($sanitized, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $this->validateAndEnhanceResponse($decoded);
         }
 
-        // Strategy 4: Build structured response from raw text (graceful degradation)
-        Log::error('OpenRouter JSON Parse failed after all strategies — using text-based fallback', [
+        // Strategy 4: Text-based fallback
+        Log::error('OpenRouter JSON parse failed', [
             'json_error' => json_last_error_msg(),
-            'raw_content'=> mb_substr($content, 0, 800),
+            'content_preview' => mb_substr($content, 0, 500),
         ]);
 
         return $this->buildTextFallbackResponse($content);
     }
 
     /**
-     * Extract JSON from various response formats (markdown, mixed text, etc).
+     * Extract JSON from various response formats.
      */
     private function extractJsonFromResponse(string $raw): string
     {
         $raw = trim($raw);
-
-        // Remove BOM and invisible control characters
+        
+        // Remove BOM
         $raw = preg_replace('/^[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\xEF\xBB\xBF]+/', '', $raw);
 
-        // Pattern 1: ```json ... ``` with possible newlines
+        // Pattern 1: ```json ... ```
         if (preg_match('/```json\s*([\s\S]*?)\s*```/i', $raw, $m) && !empty(trim($m[1]))) {
             return trim($m[1]);
         }
 
-        // Pattern 2: ``` ... ``` (plain code block)
+        // Pattern 2: ``` ... ``` (generic code block)
         if (preg_match('/```\s*([\s\S]*?)\s*```/', $raw, $m) && !empty(trim($m[1]))) {
             $inner = trim($m[1]);
             if (str_starts_with($inner, '{') || str_starts_with($inner, '[')) {
@@ -414,7 +645,7 @@ PROMPT;
             }
         }
 
-        // Pattern 3: Find the outermost balanced { ... } block
+        // Pattern 3: Find balanced { ... } block
         $startPos = strpos($raw, '{');
         if ($startPos !== false) {
             $depth   = 0;
@@ -443,72 +674,89 @@ PROMPT;
             }
         }
 
-        // Pattern 4: Fallback — return as-is
         return $raw;
     }
 
     /**
-     * Sanitize common JSON issues from OpenRouter output.
+     * Sanitize common JSON issues.
      */
     private function sanitizeJsonString(string $json): string
     {
-        // Remove trailing commas before } or ]
-        $json = preg_replace('/,\s*([}\]])/m', '$1', $json);
-
-        // Remove single-line comments (// ...)
-        $json = preg_replace('/\/\/[^\n]*/', '', $json);
-
-        // Replace curly/smart quotes with straight quotes
-        $json = str_replace(["\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}"], '"', $json);
-
-        // Trim whitespace
+        $json = preg_replace('/,\s*([}\]])/m', '$1', $json);  // Trailing commas
+        $json = preg_replace('/\/\/[^\n]*/', '', $json);      // Single-line comments
+        $json = str_replace(["\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}"], '"', $json); // Smart quotes
+        
         return trim($json);
     }
 
     /**
-     * Build a fallback response when JSON parsing completely fails.
-     * Tries to extract key information from raw text.
+     * Validate and enhance parsed response.
+     */
+    private function validateAndEnhanceResponse(array $response): array
+    {
+        $defaults = [
+            'confidence'          => 0.7,
+            'action_required'     => false,
+            'can_consult_chatbot' => true,
+            'predicted_class'     => 'Normal',
+        ];
+
+        foreach ($defaults as $key => $default) {
+            if (!isset($response[$key])) {
+                $response[$key] = $default;
+            }
+        }
+
+        if (!isset($response['recommendation'])) {
+            $response['recommendation'] = $response['friendly_summary'] ?? 'Analisis selesai.';
+        }
+
+        return $response;
+    }
+
+    /**
+     * Build text-based fallback response.
      */
     private function buildTextFallbackResponse(string $rawText): array
     {
         $lower = strtolower($rawText);
 
-        // Detect condition from text keywords
         $predictedClass = 'Normal';
-        if (str_contains($lower, 'rabun jauh') || str_contains($lower, 'miopi') || str_contains($lower, 'myopia')) {
-            $predictedClass = 'Rabun Jauh';
-        } elseif (str_contains($lower, 'rabun dekat') || str_contains($lower, 'hiper') || str_contains($lower, 'presbi')) {
-            $predictedClass = 'Rabun Dekat';
+        if (str_contains($lower, 'rabun jauh') || str_contains($lower, 'miopi')) {
+            $predictedClass = (str_contains($lower, 'silinder') || str_contains($lower, 'astigmat')) 
+                ? 'Rabun Jauh & Silinder' : 'Rabun Jauh';
+        } elseif (str_contains($lower, 'rabun dekat') || str_contains($lower, 'hiper')) {
+            $predictedClass = (str_contains($lower, 'silinder') || str_contains($lower, 'astigmat')) 
+                ? 'Rabun Dekat & Silinder' : 'Rabun Dekat';
         } elseif (str_contains($lower, 'silinder') || str_contains($lower, 'astigmat')) {
             $predictedClass = 'Silinder';
         }
 
-        // Extract a clean summary (first 300 chars, no JSON artifacts)
         $cleanText = preg_replace('/[{}\[\]":]/', '', $rawText);
         $cleanText = preg_replace('/\s+/', ' ', trim($cleanText));
-        $recommendation = mb_substr($cleanText, 0, 300);
-        if (empty($recommendation)) {
-            $recommendation = 'Berdasarkan analisis, disarankan untuk melakukan pemeriksaan ke dokter mata.';
-        }
+        $recommendation = mb_substr($cleanText, 0, 300) ?: 
+                         'Disarankan untuk melakukan pemeriksaan ke dokter mata.';
 
         return $this->buildFallbackResponse($predictedClass, $recommendation);
     }
 
     /**
-     * Build a standard structured fallback response.
+     * Build standard fallback response.
      */
     private function buildFallbackResponse(string $predictedClass, string $recommendation): array
     {
         return [
-            'predicted_class'   => $predictedClass,
-            'confidence'        => 0.50,
-            'visual_acuity'     => null,
-            'snellen_decimal'   => null,
-            'recommendation'    => $recommendation,
-            'action_required'   => $predictedClass !== 'Normal',
-            'can_consult_chatbot' => true,
-            'friendly_summary'  => 'Hasil analisis menunjukkan kondisi ' . $predictedClass . '. Silakan konsultasikan dengan dokter mata untuk pemeriksaan lebih lanjut.',
+            'predicted_class'    => $predictedClass,
+            'confidence'         => 0.50,
+            'visual_acuity'      => null,
+            'snellen_decimal'    => null,
+            'recommendation'     => $recommendation,
+            'action_required'    => $predictedClass !== 'Normal',
+            'can_consult_chatbot'=> true,
+            'friendly_summary'   => $predictedClass !== 'Normal'
+                ? "Hasil skrining: indikasi {$predictedClass}. Konsultasi ke dokter mata disarankan."
+                : "Hasil skrining: mata dalam batas normal. Tetap jaga kesehatan mata!",
+            'is_fallback'        => true,
         ];
     }
 }
-?>
