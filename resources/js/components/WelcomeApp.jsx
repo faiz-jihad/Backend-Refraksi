@@ -703,7 +703,7 @@ function PageLoadAnimation({ onComplete }) {
 
     return (
         <div style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
+            position: 'fixed', inset: 0, zIndex: 999999,
             background: 'transparent',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
@@ -1080,7 +1080,7 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled, s
                 margin: '0 auto',
                 width: scrolled ? 'calc(100% - 48px)' : '100%',
                 maxWidth: scrolled ? 1200 : '100%',
-                zIndex: 1000,
+                zIndex: 99999,
                 background: scrolled ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.7)',
                 backdropFilter: 'blur(20px)',
                 borderRadius: scrolled ? 24 : 0,
@@ -1135,7 +1135,7 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled, s
                                                 position: 'absolute', top: 'calc(100% + 8px)', right: 0,
                                                 background: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(20px)',
                                                 border: `1.5px solid ${T.borderM}`, borderRadius: 12,
-                                                padding: 6, zIndex: 1100, display: 'flex', flexDirection: 'column', gap: 2,
+                                                padding: 6, zIndex: 100001, display: 'flex', flexDirection: 'column', gap: 2,
                                                 boxShadow: '0 10px 25px rgba(22,163,74,0.12)', minWidth: 120
                                             }}>
                                             {languages.map(l => (
@@ -1194,7 +1194,7 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled, s
                             border: `1.5px solid ${T.borderM}`,
                             boxShadow: '0 20px 60px rgba(22,163,74,0.12)',
                             padding: 16,
-                            zIndex: 999,
+                            zIndex: 99998,
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 4,
@@ -2017,7 +2017,7 @@ export default function WelcomeApp({ loginRoute, adminRoute, isAuthenticated, us
                 <AnimatePresence>
                     {comingSoon && (
                         <div style={{
-                            position: 'fixed', inset: 0, zIndex: 10000,
+                            position: 'fixed', inset: 0, zIndex: 1000000,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: 'rgba(15,41,24,0.3)', backdropFilter: 'blur(12px)',
                             padding: 24,
