@@ -204,7 +204,7 @@ class GeminiService
 
         $generationConfig = array_merge([
             'temperature'     => 0.7,
-            'maxOutputTokens' => 1024,
+            'maxOutputTokens' => 2048,
         ], $options);
 
         return $this->generateContent($contents, $generationConfig, true);
@@ -234,7 +234,7 @@ class GeminiService
             'system_instruction' => $this->getSystemInstruction(),
             'generationConfig' => [
                 'temperature'     => 0.7,
-                'maxOutputTokens' => 1024,
+                'maxOutputTokens' => 2048,
             ],
         ];
 

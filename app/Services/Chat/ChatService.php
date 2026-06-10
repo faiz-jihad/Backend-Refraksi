@@ -58,8 +58,9 @@ class ChatService
             ]);
         }
 
-        // 2. Get history
+        // 2. Get history (limit to last 10 messages to keep request context lean and avoid timeouts)
         $history = $this->repository->getMessagesBySessionId($session->id)
+            ->take(-10)
             ->map(fn($msg) => [
                 'role' => $msg->role,
                 'content' => $msg->content,

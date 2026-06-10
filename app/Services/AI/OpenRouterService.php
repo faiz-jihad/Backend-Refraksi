@@ -149,7 +149,7 @@ class OpenRouterService
         $messages = $this->buildChatMessages($message, $history);
         
         $temperature = $options['temperature'] ?? 0.7;
-        $maxTokens = $options['max_tokens'] ?? 1024;
+        $maxTokens = $options['max_tokens'] ?? 2048;
         
         $models = $this->getModelsToTry();
         $lastException = null;
