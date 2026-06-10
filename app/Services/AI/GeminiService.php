@@ -195,7 +195,7 @@ FORMAT RESPONS (JSON valid TANPA markdown, TANPA teks lain):
   "confidence": 0.90,
   "visual_acuity": "20/{$smallestRow}",
   "snellen_decimal": 0.67,
-  "recommendation": "Berikan penjelasan yang mendalam, spesifik, dan aplikatif namun tetap PADAT dan tidak bertele-tele (untuk menghemat kuota). Gunakan gaya bicara ramah. Wajib sertakan: 1. Detail kondisi hasil tes. 2. Saran tindakan konkret (misal: 'Periksa ke dokter' atau 'Perlu kacamata'). 3. Tips praktis (misal: aturan 20-20-20). JANGAN bertele-tele.",
+  "recommendation": "Berikan penjelasan yang mendalam, spesifik, dan aplikatif namun tetap PADAT dan tidak bertele-tele (untuk menghemat kuota). Gunakan gaya bicara ramah. Wajib sertakan: 1. Detail kondisi hasil tes. 2. Estimasi kasar ukuran kacamata yang dibutuhkan jika tidak normal (misal: perkiraan Spheris -1.00 D jika hasil 20/100, atau ukuran plus/silinder jika terindikasi) beserta catatan bahwa ini hanya perkiraan awal skrining dan bukan resep medis final. 3. Saran tindakan konkret (misal: 'Periksa ke dokter' atau 'Perlu kacamata'). 4. Tips praktis (misal: aturan 20-20-20). JANGAN bertele-tele.",
   "action_required": true,
   "can_consult_chatbot": true,
   "friendly_summary": "Ringkasan hasil tes dalam 1-2 kalimat ramah yang dioptimalkan untuk Text-to-Speech."

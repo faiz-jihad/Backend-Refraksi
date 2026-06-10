@@ -251,7 +251,7 @@ FORMAT RESPONS (JSON valid TANPA markdown, TANPA teks lain):
   "confidence": 0.90,
   "visual_acuity": "20/{$smallestRow}",
   "snellen_decimal": 0.67,
-  "recommendation": "Berikan penjelasan yang mendalam, spesifik, dan aplikatif namun tetap PADAT dan tidak bertele-tele (untuk menghemat kuota). Gunakan gaya bicara ramah. Wajib sertakan: 1. Detail kondisi hasil tes. 2. Saran tindakan konkret (misal: 'Periksa ke dokter' atau 'Perlu kacamata'). 3. Tips praktis (misal: aturan 20-20-20). JANGAN bertele-tele.",
+  "recommendation": "Berikan penjelasan yang mendalam, spesifik, dan aplikatif namun tetap PADAT dan tidak bertele-tele (untuk menghemat kuota). Gunakan gaya bicara ramah. Wajib sertakan: 1. Detail kondisi hasil tes. 2. Estimasi kasar ukuran kacamata yang dibutuhkan jika tidak normal (misal: perkiraan Spheris -1.00 D jika hasil 20/100, atau ukuran plus/silinder jika terindikasi) beserta catatan bahwa ini hanya perkiraan awal skrining dan bukan resep medis final. 3. Saran tindakan konkret (misal: 'Periksa ke dokter' atau 'Perlu kacamata'). 4. Tips praktis (misal: aturan 20-20-20). JANGAN bertele-tele.",
   "action_required": true,
   "can_consult_chatbot": true,
   "friendly_summary": "Ringkasan hasil tes dalam 1-2 kalimat ramah."
@@ -335,10 +335,13 @@ PROMPT;
      */
     private function parseJsonResponse(string $raw): array
     {
-        Log::info('OpenRouter Raw Response:', [
+        Log::info('OpenRouter Raw Response Received', [
             'length'  => strlen($raw),
-            'preview' => mb_substr($raw, 0, 500),
+            'preview' => mb_substr($raw, 0, 250),
         ]);
+
+        // Log the full response on debug level only to save production disk space/io
+        Log::debug('OpenRouter Full Raw Response Payload:', ['payload' => $raw]);
 
         if (empty(trim($raw))) {
             Log::warning('OpenRouter returned completely empty response');
@@ -347,12 +350,15 @@ PROMPT;
 
         $decoded = json_decode(trim($raw), true);
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
-            Log::warning('OpenRouter JSON Parse failed for main payload: ' . json_last_error_msg());
+            Log::warning('OpenRouter JSON Parse failed for main payload: ' . json_last_error_msg(), [
+                'raw_payload' => $raw
+            ]);
             return $this->buildFallbackResponse('Normal', 'Gagal mem-parse respons utama dari OpenRouter.');
         }
         
         $content = $decoded['choices'][0]['message']['content'] ?? '';
         if (empty(trim($content))) {
+            Log::warning('OpenRouter message content is empty', ['decoded_payload' => $decoded]);
             return $this->buildFallbackResponse('Normal', 'Konten respons OpenRouter kosong.');
         }
 
