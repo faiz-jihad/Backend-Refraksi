@@ -31,9 +31,11 @@ class OpenRouterService
      */
     private const FALLBACK_MODELS = [
         'google/gemini-2.0-flash-lite-preview-02-05:free',  // Gemini Flash (paling capable)
-        'meta-llama/llama-3.3-70b-instruct:free',            // Llama 70B
-        'qwen/qwen3-next-80b-a3b-instruct:free',             // Qwen 80B MoE
-        'meta-llama/llama-3.2-3b-instruct:free',             // Llama 3B (ringan)
+        'meta-llama/llama-3.3-70b-instruct:free',            // Llama 3.3 70B
+        'deepseek/deepseek-r1-distill-llama-70b:free',       // DeepSeek R1 70B (distilled)
+        'qwen/qwen-2.5-72b-instruct:free',                   // Qwen 2.5 72B
+        'meta-llama/llama-3.2-3b-instruct:free',             // Llama 3.2 3B (ringan)
+        'openrouter/free',                                   // OpenRouter Free Auto-Router (Catch-all)
     ];
 
     public function __construct()
