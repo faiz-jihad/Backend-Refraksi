@@ -11,6 +11,7 @@ if (container) {
     const userName = container.getAttribute('data-user-name') || '';
     const statsPatients = container.getAttribute('data-stats-patients') || '50,000+';
     const statsDoctors = container.getAttribute('data-stats-doctors') || '120+';
+    const apkRoute = container.getAttribute('data-apk-route') || '/downloads/mataceria-latest.apk';
 
     let doctors = [];
     try {
@@ -30,6 +31,7 @@ if (container) {
                 statsPatients={statsPatients}
                 statsDoctors={statsDoctors}
                 doctors={doctors}
+                apkRoute={apkRoute}
             />
         </React.StrictMode>
     );

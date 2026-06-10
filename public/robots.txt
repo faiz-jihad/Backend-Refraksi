@@ -1,2 +1,4 @@
 User-agent: *
 Disallow:
+
+Sitemap: https://mataceria.my.id/sitemap.xml

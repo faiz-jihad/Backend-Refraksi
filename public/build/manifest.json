@@ -1,18 +1,4 @@
 {
-  "_chart-column-bAsoDMQj.js": {
-    "file": "assets/chart-column-bAsoDMQj.js",
-    "name": "chart-column",
-    "imports": [
-      "_shield-check-CvqwcaS6.js"
-    ]
-  },
-  "_download-pyV6Rbz-.js": {
-    "file": "assets/download-pyV6Rbz-.js",
-    "name": "download",
-    "imports": [
-      "_shield-check-CvqwcaS6.js"
-    ]
-  },
   "_fonts-DkuEHybc.css": {
     "file": "assets/fonts-DkuEHybc.css",
     "src": "_fonts-DkuEHybc.css"
@@ -65,40 +51,12 @@
     "file": "assets/instrument-sans-600-normal-DMks36a2.woff",
     "src": "_instrument-sans-600-normal-DMks36a2.woff"
   },
-  "_message-square-B8yEY-dM.js": {
-    "file": "assets/message-square-B8yEY-dM.js",
-    "name": "message-square",
-    "imports": [
-      "_shield-check-CvqwcaS6.js"
-    ]
-  },
-  "_shield-check-CvqwcaS6.js": {
-    "file": "assets/shield-check-CvqwcaS6.js",
-    "name": "shield-check"
-  },
-  "_smartphone-C2WAnX0j.js": {
-    "file": "assets/smartphone-C2WAnX0j.js",
-    "name": "smartphone",
-    "imports": [
-      "_shield-check-CvqwcaS6.js"
-    ]
-  },
-  "_star-BCjgN--R.js": {
-    "file": "assets/star-BCjgN--R.js",
-    "name": "star",
-    "imports": [
-      "_shield-check-CvqwcaS6.js"
-    ]
-  },
-  "_users-u5DxRvDW.js": {
-    "file": "assets/users-u5DxRvDW.js",
-    "name": "users",
-    "imports": [
-      "_shield-check-CvqwcaS6.js"
-    ]
+  "_message-square-CrvcOY-y.js": {
+    "file": "assets/message-square-CrvcOY-y.js",
+    "name": "message-square"
   },
   "resources/css/app.css": {
-    "file": "assets/app-Bvg7UyP9.css",
+    "file": "assets/app-BddrBtUK.css",
     "name": "app",
     "names": [
       "app.css"
@@ -107,15 +65,12 @@
     "isEntry": true
   },
   "resources/js/admin.jsx": {
-    "file": "assets/admin-BuoyeVrA.js",
+    "file": "assets/admin-BunAQSqL.js",
     "name": "admin",
     "src": "resources/js/admin.jsx",
     "isEntry": true,
     "imports": [
-      "_shield-check-CvqwcaS6.js",
-      "_chart-column-bAsoDMQj.js",
-      "_message-square-B8yEY-dM.js",
-      "_users-u5DxRvDW.js"
+      "_message-square-CrvcOY-y.js"
     ]
   },
   "resources/js/app.js": {
@@ -124,82 +79,13 @@
     "src": "resources/js/app.js",
     "isEntry": true
   },
-  "resources/js/components/BentoFeatures.jsx": {
-    "file": "assets/BentoFeatures-DYI8z8mX.js",
-    "name": "BentoFeatures",
-    "src": "resources/js/components/BentoFeatures.jsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "_shield-check-CvqwcaS6.js",
-      "resources/js/welcome.jsx",
-      "_chart-column-bAsoDMQj.js",
-      "_message-square-B8yEY-dM.js",
-      "_smartphone-C2WAnX0j.js"
-    ]
-  },
-  "resources/js/components/MobileShowcase.jsx": {
-    "file": "assets/MobileShowcase-s2dZXf7y.js",
-    "name": "MobileShowcase",
-    "src": "resources/js/components/MobileShowcase.jsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "_shield-check-CvqwcaS6.js",
-      "resources/js/welcome.jsx",
-      "_download-pyV6Rbz-.js",
-      "_smartphone-C2WAnX0j.js",
-      "_star-BCjgN--R.js"
-    ]
-  },
-  "resources/js/components/ProcessTimeline.jsx": {
-    "file": "assets/ProcessTimeline-7pImyFTI.js",
-    "name": "ProcessTimeline",
-    "src": "resources/js/components/ProcessTimeline.jsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "_shield-check-CvqwcaS6.js",
-      "resources/js/welcome.jsx",
-      "_chart-column-bAsoDMQj.js",
-      "_download-pyV6Rbz-.js"
-    ]
-  },
-  "resources/js/components/StatsSection.jsx": {
-    "file": "assets/StatsSection-CpGRaVn_.js",
-    "name": "StatsSection",
-    "src": "resources/js/components/StatsSection.jsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "_shield-check-CvqwcaS6.js",
-      "resources/js/welcome.jsx",
-      "_star-BCjgN--R.js",
-      "_users-u5DxRvDW.js"
-    ]
-  },
-  "resources/js/components/TestimonialMarquee.jsx": {
-    "file": "assets/TestimonialMarquee-BW4ZfKL4.js",
-    "name": "TestimonialMarquee",
-    "src": "resources/js/components/TestimonialMarquee.jsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "_shield-check-CvqwcaS6.js",
-      "resources/js/welcome.jsx",
-      "_message-square-B8yEY-dM.js",
-      "_star-BCjgN--R.js"
-    ]
-  },
   "resources/js/welcome.jsx": {
-    "file": "assets/welcome-qX21ixD8.js",
+    "file": "assets/welcome-fF6fBnvi.js",
     "name": "welcome",
     "src": "resources/js/welcome.jsx",
     "isEntry": true,
     "imports": [
-      "_shield-check-CvqwcaS6.js"
-    ],
-    "dynamicImports": [
-      "resources/js/components/StatsSection.jsx",
-      "resources/js/components/BentoFeatures.jsx",
-      "resources/js/components/ProcessTimeline.jsx",
-      "resources/js/components/MobileShowcase.jsx",
-      "resources/js/components/TestimonialMarquee.jsx"
+      "_message-square-CrvcOY-y.js"
     ]
   }
 }

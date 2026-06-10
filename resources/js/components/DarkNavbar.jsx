@@ -42,7 +42,7 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
                     alignItems: 'center', 
                     justifyContent: 'space-between', 
                     gap: '2rem',
-                    background: scrolled ? 'rgba(5, 10, 20, 0.85)' : 'rgba(10, 20, 40, 0.7)',
+                    background: scrolled ? 'rgba(7, 1, 20, 0.85)' : 'rgba(255, 255, 255, 0.03)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
                     borderBottom: scrolled ? `1px solid ${T.border}` : 'none',
@@ -55,7 +55,7 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
 
                     {/* Logo */}
                     <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.accent})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 16px rgba(14,165,233,0.4)` }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.accent})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 16px rgba(255, 46, 147, 0.4)` }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                 <circle cx="12" cy="12" r="3" />
@@ -90,7 +90,7 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
                         {isAuthenticated ? (
                             <>
                                 <span style={{ fontSize: '0.78rem', color: T.text2 }}>Hai, {userName}</span>
-                                <a href={adminRoute} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.5rem 1rem', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.brand2})`, color: '#fff', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', boxShadow: `0 0 20px rgba(14,165,233,0.3)` }}>
+                                <a href={adminRoute} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.5rem 1rem', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.brand2})`, color: '#fff', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', boxShadow: `0 0 20px rgba(255, 46, 147, 0.3)` }}>
                                     Dashboard →
                                 </a>
                             </>
@@ -101,9 +101,9 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
                                     onMouseLeave={e => e.currentTarget.style.color = T.text2}>
                                     Masuk
                                 </a>
-                                <a href={loginRoute} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.5rem 1.125rem', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.brand2})`, color: '#fff', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', boxShadow: `0 0 20px rgba(14,165,233,0.3)`, transition: 'box-shadow 0.2s' }}
-                                    onMouseEnter={e => e.currentTarget.style.boxShadow = `0 0 32px rgba(14,165,233,0.5)`}
-                                    onMouseLeave={e => e.currentTarget.style.boxShadow = `0 0 20px rgba(14,165,233,0.3)`}>
+                                <a href={loginRoute} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.5rem 1.125rem', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.brand2})`, color: '#fff', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', boxShadow: `0 0 20px rgba(255, 46, 147, 0.3)`, transition: 'box-shadow 0.2s' }}
+                                    onMouseEnter={e => e.currentTarget.style.boxShadow = `0 0 32px rgba(255, 46, 147, 0.5)`}
+                                    onMouseLeave={e => e.currentTarget.style.boxShadow = `0 0 20px rgba(255, 46, 147, 0.3)`}>
                                     Mulai Gratis
                                 </a>
                             </>
@@ -131,7 +131,7 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
                         exit={{ opacity: 0, y: -20 }}
                         style={{
                             position: 'fixed', top: '80px', left: '1rem', right: '1rem',
-                            background: 'rgba(10,20,40,0.95)', backdropFilter: 'blur(20px)',
+                            background: 'rgba(7, 1, 20, 0.95)', backdropFilter: 'blur(20px)',
                             borderRadius: '16px', border: `1px solid ${T.border2}`,
                             padding: '1rem', zIndex: 999, display: 'flex', flexDirection: 'column', gap: '4px',
                         }}

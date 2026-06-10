@@ -13,6 +13,64 @@
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="{{ url('/') }}" />
     
+    <!-- Schema.org JSON-LD Structured Data for Rich Snippets -->
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@graph": [
+        {
+          "@@type": "SoftwareApplication",
+          "@@id": "{{ url('/') }}#app",
+          "name": "MataCeria",
+          "url": "{{ url('/') }}",
+          "operatingSystem": "Android, iOS",
+          "applicationCategory": "HealthApplication",
+          "downloadUrl": "https://mataceria.my.id/",
+          "offers": {
+            "@@type": "Offer",
+            "price": "0.00",
+            "priceCurrency": "IDR"
+          },
+          "aggregateRating": {
+            "@@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "12450"
+          }
+        },
+        {
+          "@@type": "Organization",
+          "@@id": "{{ url('/') }}#organization",
+          "name": "MataCeria",
+          "url": "{{ url('/') }}",
+          "logo": "{{ url('/images/og-mataceria.jpg') }}",
+          "description": "Platform screening kesehatan mata berbasis digital pertama di Indonesia."
+        },
+        {
+          "@@type": "FAQPage",
+          "@@id": "{{ url('/') }}#faq",
+          "mainEntity": [
+            {
+              "@@type": "Question",
+              "name": "Apa itu aplikasi MataCeria?",
+              "acceptedAnswer": {
+                "@@type": "Answer",
+                "text": "MataCeria adalah platform kesehatan mata digital inovatif di Indonesia untuk deteksi dini ketajaman visual, tes rabun jauh, rabun dekat, silinder, serta konsultasi dokter mata secara instan dipandu oleh teknologi kecerdasan buatan (AI)."
+              }
+            },
+            {
+              "@@type": "Question",
+              "name": "Apakah tes mata di MataCeria akurat?",
+              "acceptedAnswer": {
+                "@@type": "Answer",
+                "text": "Ya, tes mata MataCeria dirancang dengan metode terstandarisasi medis secara digital, serta dilengkapi dengan fitur kalibrasi jarak otomatis berbasis kamera untuk hasil yang akurat."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+    
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url('/') }}">
@@ -55,15 +113,15 @@
         }
 
         body {
-            /* Dark theme matches WelcomeApp.jsx T.bg — prevents white flash */
-            background: #050A14;
-            color: #F0F4FF;
+            /* White base theme matches WelcomeApp.jsx T.bg — prevents flash */
+            background: #FFFFFF;
+            color: #0F2918;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             overflow-x: hidden;
             min-height: 100vh;
         }
 
-        /* Loader — matches new dark theme, immediately visible before JS */
+        /* Loader — calm green theme (before React hydrates) */
         #wc-loader {
             position: fixed;
             inset: 0;
@@ -73,7 +131,7 @@
             align-items: center;
             justify-content: center;
             gap: 1.25rem;
-            background: #050A14;
+            background: #FFFFFF;
             transition: opacity 0.4s ease, visibility 0.4s ease;
         }
 
@@ -87,11 +145,11 @@
             width: 52px;
             height: 52px;
             border-radius: 14px;
-            background: linear-gradient(135deg, #0EA5E9, #8B5CF6);
+            background: linear-gradient(135deg, #22C55E, #059669);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 40px rgba(14, 165, 233, 0.4);
+            box-shadow: 0 0 40px rgba(34, 197, 94, 0.35);
             animation: wc-logo-pulse 2s ease-in-out infinite;
         }
 
@@ -99,30 +157,30 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            border: 3px solid rgba(14, 165, 233, 0.15);
-            border-top-color: #0EA5E9;
+            border: 3px solid rgba(22, 163, 74, 0.18);
+            border-top-color: #16A34A;
             animation: wc-spin 0.8s linear infinite;
         }
 
         .wc-loader-text {
             font-size: 0.72rem;
             font-weight: 700;
-            color: #4B5E8A;
+            color: #8AAD97;
             text-transform: uppercase;
             letter-spacing: 0.15em;
         }
 
         @keyframes wc-spin { to { transform: rotate(360deg); } }
-        @keyframes wc-logo-pulse { 0%, 100% { box-shadow: 0 0 40px rgba(14,165,233,0.4); } 50% { box-shadow: 0 0 60px rgba(14,165,233,0.7); } }
+        @keyframes wc-logo-pulse { 0%, 100% { box-shadow: 0 0 40px rgba(34,197,94,0.35); } 50% { box-shadow: 0 0 60px rgba(34,197,94,0.55); } }
 
         /* Prevent scrollbar appearing during load */
         body.loading { overflow: hidden; }
 
-        /* Scrollbar — dark theme */
+        /* Scrollbar — green-tinted light theme */
         ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #050A14; }
-        ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 99px; }
-        ::-webkit-scrollbar-thumb:hover { background: #0EA5E9; }
+        ::-webkit-scrollbar-track { background: #F4FAF6; }
+        ::-webkit-scrollbar-thumb { background: #B6D9C2; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #16A34A; }
     </style>
 
     <!-- Styles and Scripts via Vite (deferred by default in Vite 5+) -->
@@ -166,17 +224,44 @@
 
     <!-- Fallback Content for SEO & Search Engine Crawlers (Googlebot) -->
     <noscript>
-        <div style="padding: 2rem; background: #050A14; color: #fff;">
-            <h1>MataCeria — Lindungi Penglihatanmu dari Sekarang</h1>
-            <p>Platform kesehatan mata digital pertama di Indonesia. Deteksi dini, tes refraksi digital, dan konsultasi dokter dalam satu ekosistem terintegrasi berbasis AI.</p>
-            <h2>Fitur Utama MataCeria</h2>
-            <ul>
-                <li>Tes Refraksi Digital: Ukur ketajaman penglihatan dengan metode digital.</li>
-                <li>AI Diagnostics: Model Gemini AI menganalisis pola penglihatan.</li>
-                <li>Konsultasi AI 24/7: Tanya jawab dengan asisten dokter mata virtual.</li>
-                <li>RS Rujukan Terdekat: Temukan klinik dan rumah sakit mata terdekat.</li>
-            </ul>
-            <p>Bergabunglah dengan lebih dari 50.000 pengguna aktif. <a href="{{ route('login') }}">Masuk</a> atau <a href="/register">Daftar Gratis</a> sekarang.</p>
+        <div style="padding: 4rem 2rem; max-width: 800px; margin: 0 auto; font-family: sans-serif; line-height: 1.8; color: #0F2918; background: #FFFFFF;">
+            <header style="text-align: center; margin-bottom: 3rem;">
+                <h1 style="font-size: 2.5rem; color: #16A34A; margin-bottom: 1rem;">MataCeria — Uji Kesehatan Mata Secara Digital</h1>
+                <p style="font-size: 1.2rem; color: #3D6B52;">Platform Screening & Kesehatan Mata Digital #1 di Indonesia. Deteksi Dini Rabun Jauh (Myopia), Rabun Dekat (Hyperopia), dan Silinder (Astigmatisme).</p>
+            </header>
+            
+            <section style="margin-bottom: 3rem;">
+                <h2 style="color: #0F2918; border-bottom: 2px solid #E2F0E8; padding-bottom: 0.5rem;">Mengapa Memilih MataCeria?</h2>
+                <p>MataCeria memberikan kemudahan screening kesehatan mata mandiri kapan saja dan di mana saja langsung dari smartphone Anda. Didukung oleh teknologi kecerdasan buatan (AI) terdepan untuk hasil akurat dan terstandarisasi secara klinis.</p>
+            </section>
+
+            <section style="margin-bottom: 3rem;">
+                <h2 style="color: #0F2918; border-bottom: 2px solid #E2F0E8; padding-bottom: 0.5rem;">Fitur Utama Aplikasi</h2>
+                <ul style="padding-left: 1.5rem;">
+                    <li><strong>Uji Refraksi Mandiri:</strong> Tes ketajaman penglihatan digital menggunakan standar Snellen Chart dan sistem kalibrasi jarak cerdas.</li>
+                    <li><strong>Deteksi Silinder (Astigmatisme):</strong> Menguji kelainan kelengkungan kornea mata menggunakan bagan dial kipas astigmat terkalibrasi.</li>
+                    <li><strong>Rekomendasi Diagnostik Berbasis AI:</strong> Dapatkan analisis klinis instan dan saran tindak lanjut kesehatan mata Anda.</li>
+                    <li><strong>Konsultasi Dokter & Klinik:</strong> Terhubung dengan dokter spesialis mata terpercaya secara real-time.</li>
+                </ul>
+            </section>
+
+            <section style="margin-bottom: 3rem;">
+                <h2 style="color: #0F2918; border-bottom: 2px solid #E2F0E8; padding-bottom: 0.5rem;">Bagaimana Cara Kerja Aplikasi?</h2>
+                <ol style="padding-left: 1.5rem;">
+                    <li><strong>Download Aplikasi:</strong> Unduh aplikasi MataCeria gratis dari App Store atau Google Play Store.</li>
+                    <li><strong>Pilih Tes Mata:</strong> Tentukan pemeriksaan yang ingin Anda jalani (Rabun Jauh, Rabun Dekat, atau Silinder).</li>
+                    <li><strong>Screening Cepat:</strong> Ikuti panduan suara dan visual interaktif berdurasi 3 menit.</li>
+                    <li><strong>Lihat Hasil Instan:</strong> Terima laporan medis terformat yang dapat dibagikan kepada spesialis mata Anda.</li>
+                </ol>
+            </section>
+            
+            <section style="text-align: center; margin-top: 4rem;">
+                <p style="font-weight: bold; font-size: 1.1rem;">Bergabunglah dengan 50.000+ pengguna aktif yang mempercayakan kesehatan matanya pada MataCeria.</p>
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
+                    <a href="{{ route('login') }}" style="background: #16A34A; color: #fff; padding: 0.75rem 2rem; border-radius: 8px; text-decoration: none; font-weight: bold;">Masuk ke Akun</a>
+                    <a href="/register" style="border: 2px solid #16A34A; color: #16A34A; padding: 0.75rem 2rem; border-radius: 8px; text-decoration: none; font-weight: bold;">Daftar Gratis</a>
+                </div>
+            </section>
         </div>
     </noscript>
 
@@ -189,6 +274,7 @@
          data-stats-patients="{{ $patientsCount }}"
          data-stats-doctors="{{ $doctorsCount }}"
          data-doctors="{{ json_encode($dbDoctors) }}"
+         data-apk-route="{{ route('download.apk') }}"
          style="opacity:0; transition: opacity 0.4s ease;"
     ></div>
 

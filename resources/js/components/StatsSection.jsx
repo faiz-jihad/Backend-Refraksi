@@ -82,10 +82,10 @@ export default function StatsSection({ statsPatients, statsDoctors }) {
     const doctors  = parseInt(String(statsDoctors).replace(/[^0-9]/g, '')) || 120;
 
     const stats = [
-        { icon: <Users size={20} />,     label: 'Pengguna Aktif',   rawValue: patients, suffix: '+', color: T.brand,  bg: 'rgba(14,165,233,0.1)' },
-        { icon: <Eye size={20} />,       label: 'Pemeriksaan Mata', rawValue: 142000,   suffix: '+', color: T.brand2, bg: 'rgba(6,182,212,0.1)' },
-        { icon: <Star size={20} />,      label: 'Rating Pengguna',  rawValue: 4.9,      suffix: '/5', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
-        { icon: <Building2 size={20} />, label: 'RS Rujukan',       rawValue: doctors,  suffix: '+', color: T.green,  bg: 'rgba(16,185,129,0.1)' },
+        { icon: <Users size={20} />,     label: 'Pengguna Aktif',   rawValue: patients, suffix: '+', color: T.brand,  bg: 'rgba(255, 46, 147, 0.1)' },
+        { icon: <Eye size={20} />,       label: 'Pemeriksaan Mata', rawValue: 142000,   suffix: '+', color: T.brand2, bg: 'rgba(236, 72, 153, 0.1)' },
+        { icon: <Star size={20} />,      label: 'Rating Pengguna',  rawValue: 4.9,      suffix: '/5', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)' },
+        { icon: <Building2 size={20} />, label: 'RS Rujukan',       rawValue: doctors,  suffix: '+', color: T.green,  bg: 'rgba(16, 185, 129, 0.1)' },
     ];
 
     return (

@@ -87,10 +87,10 @@ Route::get('/setup/ready', function() {
 });
 
 // Direct APK download route linking to compiled Flutter APK
-Route::get('/downloads/mataceria.apk', function() {
+Route::get('/downloads/mataceria-latest.apk', function() {
     $path = 'd:/Portofolio Web/skin_detection_flutter/build/app/outputs/flutter-apk/app-release.apk';
     if (file_exists($path)) {
-        return response()->download($path, 'mataceria.apk', [
+        return response()->download($path, 'mataceria-latest.apk', [
             'Content-Type' => 'application/vnd.android.package-archive',
         ]);
     }
