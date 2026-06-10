@@ -71,27 +71,115 @@
                 if (is_string($recommendations)) {
                     $recommendations = json_decode($recommendations, true);
                 }
+
+                // Normalisasi data dari berbagai format AI (Snellen / Manual / Legacy)
+                $diagnosa = null;
+                $kategori = null;
+                $keparahan = null;
+                $summary = null;
+                $actions = [];
+                $saranKacamata = null;
+                $tipsKesehatan = null;
+                $confidence = null;
+
+                if ($recommendations) {
+                    // 1. Format Snellen AI
+                    if (isset($recommendations['predicted_class'])) {
+                        $kategori = $recommendations['predicted_class'];
+                        $summary = $recommendations['recommendation'] ?? $recommendations['friendly_summary'] ?? null;
+                        
+                        // Parse confidence
+                        if (isset($recommendations['confidence'])) {
+                            $confVal = $recommendations['confidence'];
+                            if (is_numeric($confVal)) {
+                                $confidence = ($confVal <= 1.0 ? ($confVal * 100) : $confVal) . '%';
+                            } else {
+                                $confidence = $confVal;
+                            }
+                        }
+                        
+                        $actions = isset($recommendations['friendly_summary']) ? [$recommendations['friendly_summary']] : [];
+                    } 
+                    // 2. Format Manual Input
+                    elseif (isset($recommendations['kondisi'])) {
+                        $diagnosa = $recommendations['kondisi'];
+                        $kategori = $recommendations['kategori'] ?? null;
+                        $keparahan = $recommendations['tingkat_keparahan'] ?? null;
+                        $summary = $recommendations['kondisi'];
+                        $actions = $recommendations['rekomendasi'] ?? [];
+                        $saranKacamata = $recommendations['saran_kacamata'] ?? null;
+                        $tipsKesehatan = $recommendations['tips_kesehatan'] ?? null;
+                    }
+                    // 3. Format Legacy / Default
+                    else {
+                        $summary = $recommendations['summary'] ?? null;
+                        $actions = $recommendations['actions'] ?? [];
+                    }
+                }
             @endphp
 
             @if($recommendations)
-                <div style="margin-bottom: 2rem;">
-                    <h4 style="font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">Kesimpulan Diagnosa</h4>
-                    <div style="padding: 1.5rem; background: #f8fafc; border-left: 4px solid var(--primary); border-radius: 0 12px 12px 0; font-size: 1rem; line-height: 1.6; color: var(--text-main);">
-                        {{ $recommendations['summary'] ?? 'Tidak ada ringkasan.' }}
+                <!-- Detail Kategori & Akurasi -->
+                <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                    @if($kategori)
+                    <div style="padding: 0.5rem 1rem; background: var(--primary-light); color: var(--primary-dark); border-radius: 20px; font-weight: 700; font-size: 0.813rem;">
+                        Kategori: {{ $kategori }}
                     </div>
+                    @endif
+                    
+                    @if($keparahan)
+                    <div style="padding: 0.5rem 1rem; background: #fff7ed; color: #c2410c; border-radius: 20px; font-weight: 700; font-size: 0.813rem;">
+                        Tingkat: {{ $keparahan }}
+                    </div>
+                    @endif
+
+                    @if($confidence)
+                    <div style="padding: 0.5rem 1rem; background: #f0fdf4; color: #15803d; border-radius: 20px; font-weight: 700; font-size: 0.813rem;">
+                        Akurasi AI: {{ $confidence }}
+                    </div>
+                    @endif
                 </div>
 
-                <div>
-                    <h4 style="font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">Tindakan Lanjutan</h4>
-                    <ul style="list-style: none; padding: 0;">
-                        @foreach($recommendations['actions'] ?? [] as $action)
-                        <li style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: 12px;">
+                @if($summary)
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Kesimpulan Diagnosa</h4>
+                    <div style="padding: 1.5rem; background: #f8fafc; border-left: 4px solid var(--primary); border-radius: 0 12px 12px 0; font-size: 0.95rem; line-height: 1.6; color: var(--text-main);">
+                        {{ $summary }}
+                    </div>
+                </div>
+                @endif
+
+                @if($saranKacamata)
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Rekomendasi Lensa / Kacamata</h4>
+                    <div style="padding: 1.25rem; background: #f0f9ff; border-radius: 12px; font-size: 0.938rem; line-height: 1.5; color: #0369a1; font-weight: 500; border: 1px solid #bae6fd;">
+                        👁️ {{ $saranKacamata }}
+                    </div>
+                </div>
+                @endif
+
+                @if(!empty($actions))
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Tindakan Lanjutan</h4>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        @foreach($actions as $action)
+                        <li style="display: flex; gap: 1rem; margin-bottom: 0.75rem; padding: 1rem; border: 1px solid var(--border); border-radius: 12px; background: white;">
                             <div style="color: var(--success);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 20px;"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-                            <div style="font-size: 0.938rem; font-weight: 500;">{{ $action }}</div>
+                            <div style="font-size: 0.938rem; font-weight: 500; color: var(--text-main); line-height: 1.4;">{{ $action }}</div>
                         </li>
                         @endforeach
                     </ul>
                 </div>
+                @endif
+
+                @if($tipsKesehatan)
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Tips Kesehatan Mata</h4>
+                    <div style="padding: 1.25rem; background: #fdf2f8; border-radius: 12px; font-size: 0.938rem; line-height: 1.5; color: #b91c1c; border: 1px solid #fbcfe8;">
+                        ✨ {{ $tipsKesehatan }}
+                    </div>
+                </div>
+                @endif
             @else
                 <div style="padding: 3rem; text-align: center; color: var(--text-muted);">
                     Tidak ada data rekomendasi AI untuk pemeriksaan ini.

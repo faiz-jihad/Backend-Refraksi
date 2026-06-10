@@ -3,80 +3,185 @@
 @section('title', 'Manajemen Artikel')
 
 @section('content')
-<div class="page-title-box" style="display: flex; justify-content: space-between; align-items: flex-end;">
-    <div>
-        <div class="breadcrumb">Admin / Konten</div>
-        <h2>Manajemen Artikel</h2>
+<div class="animate-in">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb">
+        <a href="{{ route('admin.dashboard') }}">Dashboard</a>
+        <span class="separator"><i class="ti ti-chevron-right"></i></span>
+        <span>Artikel</span>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-title-section" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 class="page-title">Manajemen Artikel</h1>
+            <p class="page-description">Kelola konten edukasi, berita, dan tips kesehatan mata untuk pengguna MataCeria.</p>
+        </div>
+        <a href="{{ route('admin.articles.create') }}" class="btn btn-primary">
+            <i class="ti ti-plus"></i>
+            Buat Artikel Baru
+        </a>
     </div>
-    <a href="{{ route('admin.articles.create') }}" class="btn btn-primary">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:18px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        Buat Artikel Baru
-    </a>
+
+    @if(session('success'))
+    <div style="background: var(--success-bg); color: var(--success); border: 1px solid rgba(16,185,129,0.2); padding: 0.875rem 1.25rem; border-radius: var(--r-sm); margin-bottom: 1.5rem; font-weight: 500; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="ti ti-circle-check" style="font-size: 1.1rem;"></i>
+        {{ session('success') }}
+    </div>
+    @endif
+
+    <!-- Main Card -->
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn btn-primary category-filter" data-category="all">Semua</button>
+                <button class="btn btn-secondary category-filter" data-category="Tips">Tips Kesehatan</button>
+                <button class="btn btn-secondary category-filter" data-category="Edukasi">Edukasi</button>
+                <button class="btn btn-secondary category-filter" data-category="Berita">Berita Utama</button>
+                <button class="btn btn-secondary category-filter" data-category="Umum">Umum</button>
+            </div>
+            <div class="search-wrap" style="width: 240px; margin-left: auto;">
+                <i class="ti ti-search search-icon" style="font-size:0.9rem;"></i>
+                <input type="text" id="articleSearch" placeholder="Cari judul atau isi...">
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Judul & Konten</th>
+                        <th>Kategori</th>
+                        <th>Tanggal Rilis</th>
+                        <th style="text-align: right;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($articles as $article)
+                    <tr class="article-row" data-category="{{ $article->category ?? 'Umum' }}" data-title="{{ $article->title }}" data-content="{{ $article->content }}">
+                        <td>
+                            <div style="font-weight: 700; color: var(--text); margin-bottom: 0.25rem; font-size: 0.9rem;">{{ $article->title }}</div>
+                            <div style="font-size: 0.78rem; color: var(--text-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; max-height: 3rem;">
+                                {{ $article->content }}
+                            </div>
+                        </td>
+                        <td>
+                            @if(($article->category ?? 'Umum') === 'Tips')
+                                <span class="badge badge-brand"><i class="ti ti-bulb" style="font-size: 10px; margin-right: 4px;"></i>Tips Kesehatan</span>
+                            @elseif(($article->category ?? 'Umum') === 'Edukasi')
+                                <span class="badge badge-info"><i class="ti ti-book-2" style="font-size: 10px; margin-right: 4px;"></i>Edukasi</span>
+                            @elseif(($article->category ?? 'Umum') === 'Berita')
+                                <span class="badge badge-warning"><i class="ti ti-news" style="font-size: 10px; margin-right: 4px;"></i>Berita Utama</span>
+                            @else
+                                <span class="badge badge-success"><i class="ti ti-file-text" style="font-size: 10px; margin-right: 4px;"></i>{{ $article->category ?? 'Umum' }}</span>
+                            @endif
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; font-size: 0.85rem;">{{ $article->created_at->format('d M Y') }}</div>
+                            <div style="font-size: 0.72rem; color: var(--text-3); margin-top: 0.1rem;">{{ $article->created_at->format('H:i') }} WIB</div>
+                        </td>
+                        <td style="text-align: right;">
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                                <a href="{{ route('admin.articles.edit', $article->id) }}" class="header-icon-btn" title="Edit Artikel" style="width: 32px; height: 32px; color: var(--brand);">
+                                    <i class="ti ti-edit"></i>
+                                </a>
+                                <form action="{{ route('admin.articles.destroy', $article->id) }}" method="POST" onsubmit="return confirm('Hapus artikel ini secara permanen?')" style="display: inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="header-icon-btn" title="Hapus Artikel" style="width: 32px; height: 32px; color: var(--danger); border: 1px solid var(--border); background: var(--surface);">
+                                        <i class="ti ti-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr class="initial-empty-row">
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <i class="ti ti-file-off empty-state-icon"></i>
+                                <h4 class="empty-state-title">Belum ada artikel</h4>
+                                <p>Daftar artikel yang Anda buat akan muncul di sini.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                    
+                    <tr class="empty-row" style="display: none;">
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <i class="ti ti-file-off empty-state-icon"></i>
+                                <h4 class="empty-state-title">Tidak ada artikel ditemukan</h4>
+                                <p>Sesuaikan kata kunci pencarian atau filter kategori Anda.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<div class="table-card">
-    <div class="table-header">
-        <div style="display: flex; gap: 1rem;">
-            <button class="btn btn-white active">Semua</button>
-            <button class="btn btn-white">Tips</button>
-            <button class="btn btn-white">Edukasi</button>
-        </div>
-        <div class="search-bar" style="border: 1px solid var(--border);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" placeholder="Filter judul...">
-        </div>
-    </div>
-    <div style="overflow-x: auto;">
-        <table class="custom-table">
-            <thead>
-                <tr>
-                    <th style="width: 50%;">Judul & Konten</th>
-                    <th>Kategori</th>
-                    <th>Tanggal Rilis</th>
-                    <th style="text-align: right;">Opsi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($articles as $article)
-                <tr>
-                    <td>
-                        <div style="font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">{{ $article->title }}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">
-                            {{ $article->content }}
-                        </div>
-                    </td>
-                    <td><span class="badge badge-blue">{{ $article->category ?? 'Umum' }}</span></td>
-                    <td>
-                        <div style="font-weight: 500;">{{ $article->created_at->format('d M Y') }}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ $article->created_at->format('H:i') }} WIB</div>
-                    </td>
-                    <td style="text-align: right;">
-                        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                            <a href="{{ route('admin.articles.edit', $article->id) }}" class="btn btn-white" style="padding: 0.4rem 0.6rem;" title="Edit">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            </a>
-                            <form action="{{ route('admin.articles.destroy', $article->id) }}" method="POST" onsubmit="return confirm('Hapus artikel ini permanen?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-white" style="padding: 0.4rem 0.6rem; color: var(--danger);">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="4" style="text-align: center; padding: 4rem;">
-                        <div style="margin-bottom: 1rem; color: var(--text-muted);">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width: 48px; opacity: 0.3;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>
-                        </div>
-                        <div style="font-weight: 600; color: var(--text-muted);">Belum ada artikel ditemukan</div>
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('articleSearch');
+        const filterButtons = document.querySelectorAll('.category-filter');
+        const rows = document.querySelectorAll('tbody tr.article-row');
+        const emptyRow = document.querySelector('tbody tr.empty-row');
+        const initialEmptyRow = document.querySelector('tbody tr.initial-empty-row');
+        
+        let currentSearch = '';
+        let currentCategory = 'all';
+        
+        function updateFilters() {
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const title = row.getAttribute('data-title').toLowerCase();
+                const content = row.getAttribute('data-content').toLowerCase();
+                const category = row.getAttribute('data-category');
+                
+                const matchesSearch = title.includes(currentSearch) || content.includes(currentSearch);
+                const matchesCategory = currentCategory === 'all' || category === currentCategory;
+                
+                if (matchesSearch && matchesCategory) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            if (initialEmptyRow) {
+                initialEmptyRow.style.display = rows.length === 0 ? '' : 'none';
+            }
+            
+            if (emptyRow) {
+                emptyRow.style.display = (visibleCount === 0 && rows.length > 0) ? '' : 'none';
+            }
+        }
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                currentSearch = e.target.value.toLowerCase();
+                updateFilters();
+            });
+        }
+        
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                filterButtons.forEach(b => {
+                    b.classList.remove('btn-primary');
+                    b.classList.add('btn-secondary');
+                });
+                
+                this.classList.remove('btn-secondary');
+                this.classList.add('btn-primary');
+                
+                currentCategory = this.getAttribute('data-category');
+                updateFilters();
+            });
+        });
+    });
+</script>
 @endsection
