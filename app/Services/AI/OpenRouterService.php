@@ -17,6 +17,32 @@ class OpenRouterService
     private int $maxRetries;
     private int $retryDelay;
 
+    private const FALLBACK_MODELS = [
+        'nvidia/nemotron-nano-12b-v2-vl:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+        'nvidia/nemotron-nano-9b-v2:free',
+        'openai/gpt-oss-120b:free',
+        'openai/gpt-oss-20b:free',
+        'qwen/qwen3-coder:free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'openrouter/free',
+    ];
+
+    /**
+     * Get list of models to try in order of preference.
+     */
+    private function getModelsToTry(): array
+    {
+        $models = [$this->model];
+        foreach (self::FALLBACK_MODELS as $m) {
+            if ($m !== $this->model) {
+                $models[] = $m;
+            }
+        }
+        return $models;
+    }
+
     public function __construct()
     {
         $this->apiKey     = (string) (config('services.openrouter.api_key') ?? '');
@@ -98,44 +124,55 @@ class OpenRouterService
             'role' => 'user',
             'content' => $message,
         ];
-        
-        $payload = [
-            'model' => $this->model,
-            'messages' => $messages,
-            'temperature' => 0.7,
-        ];
-        
-        $attempt = 0;
-        do {
-            try {
-                $response = \Illuminate\Support\Facades\Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ])->timeout(30)->post("{$this->baseUrl}/chat/completions", $payload);
 
-                if ($response->successful()) {
-                    $decoded = $response->json();
-                    return $decoded['choices'][0]['message']['content'] ?? 'Tidak ada respons dari AI.';
+        $models = $this->getModelsToTry();
+        $lastException = null;
+
+        foreach ($models as $currentModel) {
+            Log::info("Attempting OpenRouter chat using model: {$currentModel}");
+            $payload = [
+                'model' => $currentModel,
+                'messages' => $messages,
+                'temperature' => 0.7,
+            ];
+            
+            $attempt = 0;
+            do {
+                try {
+                    $response = \Illuminate\Support\Facades\Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Content-Type' => 'application/json',
+                    ])->timeout(30)->post("{$this->baseUrl}/chat/completions", $payload);
+
+                    if ($response->successful()) {
+                        $decoded = $response->json();
+                        return $decoded['choices'][0]['message']['content'] ?? 'Tidak ada respons dari AI.';
+                    }
+
+                    if ($response->status() === 429) {
+                        $retryAfter = (int) $response->header('Retry-After', $this->retryDelay / 1000);
+                        Log::warning("OpenRouter chat rate limit hit for {$currentModel}, retrying", ['retry_after' => $retryAfter, 'attempt' => $attempt]);
+                        sleep($retryAfter);
+                        continue;
+                    }
+
+                    $msg = $response->json('error.message') ?? 'OpenRouter API error';
+                    Log::error("OpenRouter API error in chat for model {$currentModel}", ['status' => $response->status(), 'message' => $msg]);
+                    $lastException = new \App\Exceptions\GeminiException($msg, $response->status());
+                    break; // Try next model
+                } catch (\Exception $e) {
+                    Log::error("OpenRouter chat exception for model {$currentModel}", ['message' => $e->getMessage(), 'attempt' => $attempt]);
+                    $lastException = new \App\Exceptions\GeminiException("Gagal terhubung ke OpenRouter ({$currentModel}): " . $e->getMessage());
+                    if ($attempt >= $this->maxRetries) {
+                        break; // Try next model
+                    }
+                    usleep($this->retryDelay * 1000);
                 }
+                $attempt++;
+            } while ($attempt <= $this->maxRetries);
+        }
 
-                if ($response->status() === 429) {
-                    $retryAfter = (int) $response->header('Retry-After', $this->retryDelay / 1000);
-                    sleep($retryAfter);
-                    continue;
-                }
-
-                $msg = $response->json('error.message') ?? 'OpenRouter API error';
-                throw new \App\Exceptions\GeminiException($msg, $response->status());
-            } catch (\Exception $e) {
-                if ($attempt >= $this->maxRetries) {
-                    throw new \App\Exceptions\GeminiException('Gagal terhubung ke OpenRouter: ' . $e->getMessage());
-                }
-                usleep($this->retryDelay * 1000);
-            }
-            $attempt++;
-        } while ($attempt <= $this->maxRetries);
-
-        throw new \App\Exceptions\GeminiException('OpenRouter service tidak tersedia saat ini.');
+        throw $lastException ?? new \App\Exceptions\GeminiException('OpenRouter service tidak tersedia saat ini.');
     }
 
     /**
@@ -228,49 +265,68 @@ PROMPT;
     private function makeRequest(string $prompt, int $timeout = 30): string
     {
         $this->validateConfiguration();
-        $payload = [
-            'model' => $this->model,
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are a helpful assistant that returns only the JSON response without any extra text.'],
-                ['role' => 'user', 'content' => $prompt],
-            ],
-            'temperature' => 0.2,
-            'max_tokens' => 512,
-        ];
-        $attempt = 0;
-        do {
-            try {
-                $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ])->timeout($timeout)->post("{$this->baseUrl}/chat/completions", $payload);
+        $models = $this->getModelsToTry();
+        $lastException = null;
 
-                if ($response->successful()) {
-                    return $response->body();
-                }
+        foreach ($models as $currentModel) {
+            Log::info("Attempting OpenRouter request using model: {$currentModel}");
+            $payload = [
+                'model' => $currentModel,
+                'messages' => [
+                    ['role' => 'system', 'content' => 'You are a helpful assistant that returns only the JSON response without any extra text.'],
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                'temperature' => 0.2,
+                'max_tokens' => 512,
+            ];
+            
+            $attempt = 0;
+            $modelSuccessful = false;
+            $responseBody = '';
+            
+            do {
+                try {
+                    $response = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Content-Type' => 'application/json',
+                    ])->timeout($timeout)->post("{$this->baseUrl}/chat/completions", $payload);
 
-                if ($response->status() === 429) {
-                    $retryAfter = (int) $response->header('Retry-After', $this->retryDelay / 1000);
-                    Log::warning('OpenRouter rate limit hit, retrying', ['retry_after' => $retryAfter, 'attempt' => $attempt]);
-                    sleep($retryAfter);
-                    continue;
-                }
+                    if ($response->successful()) {
+                        $responseBody = $response->body();
+                        $modelSuccessful = true;
+                        break;
+                    }
 
-                // Other HTTP errors
-                $msg = $response->json('error.message') ?? 'OpenRouter API error';
-                Log::error('OpenRouter API error', ['status' => $response->status(), 'message' => $msg]);
-                throw new GeminiException($msg, $response->status());
-            } catch (\Exception $e) {
-                Log::error('OpenRouter request exception', ['message' => $e->getMessage(), 'attempt' => $attempt]);
-                if ($attempt >= $this->maxRetries) {
-                    throw new GeminiException('Gagal terhubung ke OpenRouter: ' . $e->getMessage());
+                    if ($response->status() === 429) {
+                        $retryAfter = (int) $response->header('Retry-After', $this->retryDelay / 1000);
+                        Log::warning("OpenRouter rate limit hit for {$currentModel}, retrying", ['retry_after' => $retryAfter, 'attempt' => $attempt]);
+                        sleep($retryAfter);
+                        continue;
+                    }
+
+                    // Other HTTP errors (e.g. 400, 500, 503)
+                    $msg = $response->json('error.message') ?? 'OpenRouter API error';
+                    Log::error("OpenRouter API error for model {$currentModel}", ['status' => $response->status(), 'message' => $msg]);
+                    $lastException = new GeminiException($msg, $response->status());
+                    // Break the attempt loop to try the next model
+                    break;
+                } catch (\Exception $e) {
+                    Log::error("OpenRouter request exception for model {$currentModel}", ['message' => $e->getMessage(), 'attempt' => $attempt]);
+                    $lastException = new GeminiException("Gagal terhubung ke OpenRouter ({$currentModel}): " . $e->getMessage());
+                    if ($attempt >= $this->maxRetries) {
+                        break; // Try the next model
+                    }
+                    usleep($this->retryDelay * 1000);
                 }
-                usleep($this->retryDelay * 1000);
+                $attempt++;
+            } while ($attempt <= $this->maxRetries);
+            
+            if ($modelSuccessful) {
+                return $responseBody;
             }
-            $attempt++;
-        } while ($attempt <= $this->maxRetries);
+        }
 
-        throw new GeminiException('OpenRouter service tidak tersedia saat ini.');
+        throw $lastException ?? new GeminiException('OpenRouter service tidak tersedia saat ini.');
     }
 
     /**
