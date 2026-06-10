@@ -47,6 +47,7 @@ return [
         'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
         'max_retries' => env('OPENROUTER_MAX_RETRIES', 3),
         'retry_delay' => env('OPENROUTER_RETRY_DELAY', 1000), // ms
+        'timeout' => env('OPENROUTER_TIMEOUT', 10),
     ],
 
 ];

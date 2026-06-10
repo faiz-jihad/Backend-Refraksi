@@ -8,6 +8,7 @@ use App\Exceptions\RefractionAnalysisException;
 use App\Repositories\Contracts\RefractionRepositoryInterface;
 use App\Services\AI\GeminiService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Services\AI\OpenRouterService;
 
 class RefractionService
@@ -151,17 +152,20 @@ class RefractionService
                 if (env('USE_MOCK_AI', false)) {
                     $aiResult = $smartMock;
                 } else {
+                    $cacheKey = 'snellen_analysis_' . md5(json_encode($snellenData) . ($imageBase64 ? md5($imageBase64) : ''));
                     try {
-                        $aiResult = $this->geminiService->analyzeSnellen($snellenData, $imageBase64);
+                        $aiResult = Cache::remember($cacheKey, 86400, function () use ($snellenData, $imageBase64) {
+                            try {
+                                return $this->geminiService->analyzeSnellen($snellenData, $imageBase64);
+                            } catch (\Exception $e) {
+                                // Try OpenRouter fallback
+                                return $this->openRouterService->analyzeSnellen($snellenData, $imageBase64);
+                            }
+                        });
                     } catch (\Exception $e) {
-                        // Try OpenRouter fallback
-                        try {
-                            $aiResult = $this->openRouterService->analyzeSnellen($snellenData, $imageBase64);
-                        } catch (\Exception $e2) {
-                            $aiResult = $smartMock;
-                            $aiResult['recommendation'] = "🤖 [MOCK MODE - API LIMIT] " . $smartMock['recommendation'];
-                            $aiResult['error'] = $e->getMessage();
-                        }
+                        $aiResult = $smartMock;
+                        $aiResult['recommendation'] = "🤖 [MOCK MODE - API LIMIT] " . $smartMock['recommendation'];
+                        $aiResult['error'] = $e->getMessage();
                     }
                 }
 
@@ -220,17 +224,28 @@ class RefractionService
             if (env('USE_MOCK_AI', false)) {
                 $aiResult = $smartMock;
             } else {
+                // Exclude auto-incrementing/volatile fields like id, created_at, updated_at from cache key
+                $cacheData = [
+                    'right_eye_sphere' => $refraction->right_eye_sphere,
+                    'left_eye_sphere' => $refraction->left_eye_sphere,
+                    'right_eye_cylinder' => $refraction->right_eye_cylinder,
+                    'left_eye_cylinder' => $refraction->left_eye_cylinder,
+                    'visual_acuity' => $refraction->visual_acuity,
+                ];
+                $cacheKey = 'refraction_analysis_' . md5(json_encode($cacheData));
                 try {
-                    $aiResult = $this->geminiService->analyzeRefraction($refraction->toArray());
+                    $aiResult = Cache::remember($cacheKey, 86400, function () use ($refraction) {
+                        try {
+                            return $this->geminiService->analyzeRefraction($refraction->toArray());
+                        } catch (\Exception $e) {
+                            // Try OpenRouter fallback
+                            return $this->openRouterService->analyzeRefraction($refraction->toArray());
+                        }
+                    });
                 } catch (\Exception $e) {
-                    // Try OpenRouter fallback
-                    try {
-                        $aiResult = $this->openRouterService->analyzeRefraction($refraction->toArray());
-                    } catch (\Exception $e2) {
-                        $aiResult = $smartMock;
-                        $aiResult['recommendation'] = "🤖 [MOCK MODE - API LIMIT] " . $smartMock['recommendation'];
-                        $aiResult['error'] = $e->getMessage();
-                    }
+                    $aiResult = $smartMock;
+                    $aiResult['recommendation'] = "🤖 [MOCK MODE - API LIMIT] " . $smartMock['recommendation'];
+                    $aiResult['error'] = $e->getMessage();
                 }
             }
 
