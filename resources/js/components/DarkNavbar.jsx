@@ -89,19 +89,21 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexShrink: 0 }}>
                         {isAuthenticated ? (
                             <>
-                                <span style={{ fontSize: '0.78rem', color: T.text2 }}>Hai, {userName}</span>
-                                <a href={adminRoute} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.5rem 1rem', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.brand2})`, color: '#fff', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', boxShadow: `0 0 20px rgba(255, 46, 147, 0.3)` }}>
+                                <span style={{ fontSize: '0.78rem', color: T.text2 }} className="nav-cta-desktop">Hai, {userName}</span>
+                                <a href={adminRoute} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.5rem 1rem', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.brand2})`, color: '#fff', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', boxShadow: `0 0 20px rgba(255, 46, 147, 0.3)` }} className="nav-cta-desktop">
                                     Dashboard →
                                 </a>
                             </>
                         ) : (
                             <>
                                 <a href={loginRoute} style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: `1px solid ${T.border2}`, color: T.text2, fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none', transition: 'all 0.15s' }}
+                                    className="nav-cta-desktop"
                                     onMouseEnter={e => e.currentTarget.style.color = T.text}
                                     onMouseLeave={e => e.currentTarget.style.color = T.text2}>
                                     Masuk
                                 </a>
                                 <a href={loginRoute} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.5rem 1.125rem', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.brand2})`, color: '#fff', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', boxShadow: `0 0 20px rgba(255, 46, 147, 0.3)`, transition: 'box-shadow 0.2s' }}
+                                    className="nav-cta-desktop"
                                     onMouseEnter={e => e.currentTarget.style.boxShadow = `0 0 32px rgba(255, 46, 147, 0.5)`}
                                     onMouseLeave={e => e.currentTarget.style.boxShadow = `0 0 20px rgba(255, 46, 147, 0.3)`}>
                                     Mulai Gratis
@@ -133,7 +135,7 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
                             position: 'fixed', top: '80px', left: '1rem', right: '1rem',
                             background: 'rgba(7, 1, 20, 0.95)', backdropFilter: 'blur(20px)',
                             borderRadius: '16px', border: `1px solid ${T.border2}`,
-                            padding: '1rem', zIndex: 999, display: 'flex', flexDirection: 'column', gap: '4px',
+                            padding: '1.25rem', zIndex: 999, display: 'flex', flexDirection: 'column', gap: '4px',
                         }}
                     >
                         {NAV_LINKS.map(nl => (
@@ -144,11 +146,27 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
                                 {nl.label}
                             </a>
                         ))}
-                        <div style={{ height: '1px', background: T.border, margin: '0.5rem 0' }} />
-                        <a href={isAuthenticated ? adminRoute : loginRoute}
-                            style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.brand2})`, color: '#fff', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>
-                            {isAuthenticated ? 'Dashboard' : 'Mulai Gratis'}
-                        </a>
+                        <div style={{ height: '1px', background: T.border, margin: '0.75rem 0' }} />
+                        {isAuthenticated ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <span style={{ fontSize: '0.85rem', color: T.text2, textAlign: 'center', padding: '0.25rem' }}>Hai, {userName}</span>
+                                <a href={adminRoute} onClick={() => setMobileOpen(false)}
+                                    style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.brand2})`, color: '#fff', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>
+                                    Dashboard →
+                                </a>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <a href={loginRoute} onClick={() => setMobileOpen(false)}
+                                    style={{ padding: '0.75rem 1rem', borderRadius: '8px', border: `1px solid ${T.border2}`, color: T.text2, fontSize: '0.9rem', fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
+                                    Masuk
+                                </a>
+                                <a href={loginRoute} onClick={() => setMobileOpen(false)}
+                                    style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.brand2})`, color: '#fff', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>
+                                    Mulai Gratis
+                                </a>
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -156,9 +174,11 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
             <style>{`
                 @media (max-width: 768px) {
                     .nav-desktop { display: none !important; }
+                    .nav-cta-desktop { display: none !important; }
                     .nav-mobile-btn { display: flex !important; }
                 }
             `}</style>
+
         </>
     );
 }

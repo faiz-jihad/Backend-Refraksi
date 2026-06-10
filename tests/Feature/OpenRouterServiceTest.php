@@ -203,5 +203,33 @@ class OpenRouterServiceTest extends TestCase
         $this->assertStringContainsString('Hasil skrining menunjukkan adanya indikasi Rabun Jauh (Miopi).', $result['recommendation']);
         $this->assertTrue($result['is_fallback']);
     }
+
+    /**
+     * Test that the chat method returns the correct text content from a mocked OpenRouter API.
+     */
+    public function test_chat_method_succeeds_with_mocked_response(): void
+    {
+        Http::fake([
+            'openrouter.ai/api/v1/chat/completions' => Http::response([
+                'choices' => [
+                    [
+                        'message' => [
+                            'role' => 'assistant',
+                            'content' => 'Halo Kak! Saya MataCeria AI. Tips menjaga kesehatan mata adalah ikuti aturan 20-20-20.'
+                        ]
+                    ]
+                ],
+                'usage' => [
+                    'total_tokens' => 45
+                ]
+            ], 200)
+        ]);
+
+        $response = $this->service->chat("Halo! Berikan tips menjaga kesehatan mata.");
+
+        $this->assertStringContainsString('MataCeria AI', $response);
+        $this->assertStringContainsString('20-20-20', $response);
+    }
 }
+
 
