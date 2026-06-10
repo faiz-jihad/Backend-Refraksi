@@ -103,7 +103,7 @@ class GeminiService
         
         $rawResponse = $this->generateContent($prompt, [
             'temperature'      => 0.3,
-            'maxOutputTokens'  => 512,
+            'maxOutputTokens'  => 1500,
             'responseMimeType' => 'application/json',
         ]);
 
@@ -127,7 +127,7 @@ class GeminiService
         
         $jsonConfig = [
             'temperature'      => 0.2,
-            'maxOutputTokens'  => 512,
+            'maxOutputTokens'  => 1500,
             'responseMimeType' => 'application/json',
         ];
 
@@ -1023,6 +1023,11 @@ class GeminiService
             $json
         );
 
+        // Escape raw newlines, carriage returns, and tabs inside double quotes
+        $json = preg_replace_callback('/"([^"\\\\]*|\\\\.)*"/s', function ($matches) {
+            return str_replace(["\n", "\r", "\t"], ["\\n", "\\r", "\\t"], $matches[0]);
+        }, $json);
+
         // Fix common unicode issues
         $json = preg_replace('/[\x00-\x1F\x7F]/u', '', $json);
 
@@ -1079,22 +1084,52 @@ class GeminiService
             $predictedClass = 'Silinder';
         }
 
+        // Default clean recommendations based on predicted class
+        $defaultRecommendations = [
+            'Normal' => 'Hasil skrining menunjukkan kondisi mata Anda dalam batas normal. Tetap jaga kesehatan mata dengan mengonsumsi makanan bergizi dan mengistirahatkan mata secara berkala.',
+            'Rabun Jauh' => 'Hasil skrining menunjukkan adanya indikasi Rabun Jauh (Miopi). Disarankan untuk berkonsultasi dengan dokter spesialis mata atau optometris terdekat untuk mendapatkan pemeriksaan refraksi lengkap dan lensa korektif yang tepat.',
+            'Rabun Dekat' => 'Hasil skrining menunjukkan adanya indikasi Rabun Dekat (Presbiopi atau Hipermetropi). Disarankan untuk melakukan pemeriksaan mata lebih lanjut guna mendapatkan resep kacamata baca yang sesuai.',
+            'Silinder' => 'Hasil skrining menunjukkan adanya indikasi Astigmatisme (Silinder). Disarankan untuk berkonsultasi dengan dokter spesialis mata untuk mendapatkan lensa silinder agar penglihatan lebih fokus dan tidak berbayang.',
+            'Rabun Jauh & Silinder' => 'Hasil skrining menunjukkan adanya kombinasi Rabun Jauh dan Silinder (Miopi & Astigmatisme). Disarankan untuk segera melakukan pemeriksaan mata lengkap guna mendapatkan lensa korektif yang sesuai.',
+            'Rabun Dekat & Silinder' => 'Hasil skrining menunjukkan adanya kombinasi Rabun Dekat dan Silinder (Presbiopi & Astigmatisme). Disarankan untuk segera melakukan pemeriksaan mata lengkap guna mendapatkan lensa korektif yang sesuai.',
+        ];
+
         // Try to extract only the recommendation content via regex
         $recommendation = '';
-        if (preg_match('/(?:recommendation|rekomendasi|kondisi)\s*[:\-\s]+([\s\S]+?)(?=(?:action_required|friendly_summary|can_consult_chatbot|is_fallback|$))/i', $rawText, $matches)) {
+        $matched = false;
+        if (preg_match('/(?:"recommendation"|recommendation|rekomendasi|kondisi)\s*[:\-\s\t"]+([\s\S]+?)(?=(?:"?action_required|"?friendly_summary|"?can_consult_chatbot|"?is_fallback|$))/i', $rawText, $matches)) {
             $recommendation = trim($matches[1]);
             $recommendation = rtrim($recommendation, '",\t\n\r ');
-        } else {
-            $cleanText = preg_replace('/[{}\[\]":]/', '', $rawText);
-            $cleanText = preg_replace('/\s+/', ' ', trim($cleanText));
-            $recommendation = mb_substr($cleanText, 0, 500) ?: 'Disarankan untuk melakukan pemeriksaan ke dokter mata.';
+            
+            // If the matched recommendation contains JSON keys (e.g. matched too much), treat as unmatched
+            if (preg_match('/(?:"predicted_class"|"?confidence"|"?action_required"|"?friendly_summary")/i', $recommendation)) {
+                $matched = false;
+            } else {
+                $matched = true;
+            }
+        }
+
+        if (!$matched) {
+            $hasJsonKeys = (str_contains($rawText, 'predicted_class') || str_contains($rawText, 'confidence') || str_contains($rawText, 'recommendation'));
+            if ($hasJsonKeys) {
+                $recommendation = $defaultRecommendations[$predictedClass] ?? 'Disarankan untuk melakukan pemeriksaan ke dokter mata.';
+            } else {
+                $cleanText = preg_replace('/[{}\[\]":]/', '', $rawText);
+                $cleanText = preg_replace('/\s+/', ' ', trim($cleanText));
+                $recommendation = mb_substr($cleanText, 0, 500) ?: 'Disarankan untuk melakukan pemeriksaan ke dokter mata.';
+            }
         }
 
         // Try to extract friendly summary
         $friendlySummary = null;
-        if (preg_match('/friendly_summary\s*[:\-\s]+([\s\S]+?)(?=(?:action_required|can_consult_chatbot|is_fallback|$))/i', $rawText, $matches)) {
+        if (preg_match('/(?:"friendly_summary"|friendly_summary)\s*[:\-\s\t"]+([\s\S]+?)(?=(?:"?action_required|"?can_consult_chatbot|"?is_fallback|$))/i', $rawText, $matches)) {
             $friendlySummary = trim($matches[1]);
             $friendlySummary = rtrim($friendlySummary, '",\t\n\r ');
+            
+            // Discard friendly summary if it contains JSON structural keys
+            if (preg_match('/(?:"predicted_class"|"?confidence"|"?recommendation"|"?action_required")/i', $friendlySummary)) {
+                $friendlySummary = null;
+            }
         }
 
         $response = $this->buildFallbackResponse($predictedClass, $recommendation);

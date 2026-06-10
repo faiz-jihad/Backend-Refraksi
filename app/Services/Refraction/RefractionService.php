@@ -33,8 +33,21 @@ class RefractionService
                 $imageBase64  = $data['image'] ?? null;
 
                 // Compute visual_acuity from Snellen data
-                $smallestRow = $snellenData['smallest_row_read'] ?? 200;
-                $smallestN   = $snellenData['smallest_n_point'] ?? 12;
+                $smallestRowRaw = $snellenData['smallest_row_read'] ?? 200;
+                if (is_string($smallestRowRaw) && str_contains($smallestRowRaw, '/')) {
+                    $parts = explode('/', $smallestRowRaw);
+                    $smallestRow = (int) trim(end($parts));
+                } else {
+                    $smallestRow = (int) $smallestRowRaw;
+                }
+
+                $smallestNRaw = $snellenData['smallest_n_point'] ?? 12;
+                if (is_string($smallestNRaw)) {
+                    $smallestN = (int) filter_var($smallestNRaw, FILTER_SANITIZE_NUMBER_INT);
+                } else {
+                    $smallestN = (int) $smallestNRaw;
+                }
+
                 $testType    = $snellenData['test_type'] ?? 'distance';
 
                 if ($testType === 'near') {
