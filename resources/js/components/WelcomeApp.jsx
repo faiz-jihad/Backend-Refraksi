@@ -496,18 +496,11 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled })
                                 <a href={adminRoute} style={{ padding: '8px 18px', borderRadius: 10, background: T.grad, color: '#fff', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none', boxShadow: '0 4px 14px rgba(22,163,74,0.3)' }}>Dashboard →</a>
                             </>
                         ) : (
-                            <>
-                                <a href={loginRoute} style={{ padding: '8px 18px', borderRadius: 10, border: `1.5px solid ${T.border}`, color: T.text2, fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', transition: 'all 0.15s' }}
-                                   onMouseEnter={e => { e.currentTarget.style.borderColor = T.brand; e.currentTarget.style.color = T.brand; }}
-                                   onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text2; }}>
-                                    Masuk
-                                </a>
-                                <a href={loginRoute} style={{ padding: '8px 18px', borderRadius: 10, background: T.grad, color: '#fff', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none', boxShadow: '0 4px 14px rgba(22,163,74,0.3)', transition: 'all 0.2s' }}
-                                   onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 22px rgba(22,163,74,0.45)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                                   onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(22,163,74,0.3)'; e.currentTarget.style.transform = 'none'; }}>
-                                    Mulai Gratis
-                                </a>
-                            </>
+                            <a href={loginRoute} style={{ padding: '8px 18px', borderRadius: 10, background: T.grad, color: '#fff', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none', boxShadow: '0 4px 14px rgba(22,163,74,0.3)', transition: 'all 0.2s' }}
+                               onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 22px rgba(22,163,74,0.45)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                               onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(22,163,74,0.3)'; e.currentTarget.style.transform = 'none'; }}>
+                                Masuk
+                            </a>
                         )}
                         <button onClick={() => setOpen(v => !v)} className="mc-nav-mobile-btn" style={{ display: 'none', padding: '8px', borderRadius: 8, border: `1.5px solid ${T.border}`, background: 'transparent', cursor: 'pointer' }}>
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={T.text} strokeWidth="2">
@@ -547,7 +540,7 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled })
                         ))}
                         <div style={{ height: 1, background: T.border, margin: '6px 0' }}/>
                         <a href={isAuthenticated ? adminRoute : loginRoute} style={{ padding: '11px 14px', borderRadius: 10, background: T.grad, color: '#fff', fontWeight: 700, textAlign: 'center', textDecoration: 'none' }}>
-                            {isAuthenticated ? 'Dashboard' : 'Mulai Gratis'}
+                            {isAuthenticated ? 'Dashboard' : 'Masuk'}
                         </a>
                     </motion.div>
                 )}
