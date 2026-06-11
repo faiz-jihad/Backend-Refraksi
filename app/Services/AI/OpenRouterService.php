@@ -43,9 +43,9 @@ class OpenRouterService
         $this->apiKey     = config('services.openrouter.api_key', '');
         $this->model      = config('services.openrouter.model', 'google/gemini-2.0-flash-lite-preview-02-05:free');
         $this->baseUrl    = rtrim(config('services.openrouter.base_url', 'https://openrouter.ai/api/v1'), '/');
-        $this->maxRetries = (int) config('services.openrouter.max_retries', 2);
+        $this->maxRetries = (int) config('services.openrouter.max_retries', 0);
         $this->retryDelay = (int) config('services.openrouter.retry_delay', 1000);
-        $this->timeout    = (int) config('services.openrouter.timeout', 30);
+        $this->timeout    = (int) config('services.openrouter.timeout', 5);
         $this->fallbackEnabled = config('services.openrouter.fallback_enabled', true);
         
         // OpenRouter ranking headers (helps with rate limits on free models)

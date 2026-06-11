@@ -141,7 +141,7 @@ class ChatService
         }
 
         // 4. Get AI response (Menggunakan Mock jika USE_MOCK_CHAT = true agar hemat kuota)
-        if (env('USE_MOCK_CHAT', false)) {
+        if (config('services.use_mock_chat', false)) {
             $aiResponseContent = "🤖 [MOCK MODE] Halo! Ini adalah respon otomatis untuk menghemat kuota Gemini Kak.\n\n";
             
             $msgLower = strtolower($message);

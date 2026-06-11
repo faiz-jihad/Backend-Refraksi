@@ -37,7 +37,7 @@ return [
 
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'model' => env('GEMINI_MODEL', 'gemini-1.5-flash'),
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
     ],
 
@@ -45,10 +45,13 @@ return [
         'api_key' => env('OPENROUTER_API_KEY'),
         'model' => env('OPENROUTER_MODEL', 'openrouter/free'),
         'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
-        'max_retries' => env('OPENROUTER_MAX_RETRIES', 3),
+        'max_retries' => env('OPENROUTER_MAX_RETRIES', 0),
         'retry_delay' => env('OPENROUTER_RETRY_DELAY', 1000), // ms
-        'timeout' => env('OPENROUTER_TIMEOUT', 10),
+        'timeout' => env('OPENROUTER_TIMEOUT', 5),
     ],
+
+    'use_mock_ai' => env('USE_MOCK_AI', false),
+    'use_mock_chat' => env('USE_MOCK_CHAT', false),
 
     // 
     'prerender' => [

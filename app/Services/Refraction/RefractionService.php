@@ -162,7 +162,7 @@ class RefractionService
                     'mock_mode'           => true,
                 ];
 
-                if (env('USE_MOCK_AI', false)) {
+                if (config('services.use_mock_ai', false)) {
                     $aiResult = $smartMock;
                 } else {
                     $cacheKey = 'snellen_analysis_' . md5(json_encode($snellenData) . ($imageBase64 ? md5($imageBase64) : ''));
@@ -238,7 +238,7 @@ class RefractionService
                 'mock_mode'           => true,
             ];
 
-            if (env('USE_MOCK_AI', false)) {
+            if (config('services.use_mock_ai', false)) {
                 $aiResult = $smartMock;
             } else {
                 // Exclude auto-incrementing/volatile fields like id, created_at, updated_at from cache key
