@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+    <!-- Stylized Eye and Star Favicon -->
+    <!-- Upper arch (Teal/Dark Green) -->
+    <path d="M12,68 C30,35 98,35 116,68 C95,50 33,50 12,68 Z" fill="#1A433A" />
+    
+    <!-- Lower arch (Gold/Bronze) -->
+    <path d="M22,74 C42,95 86,95 106,74 C90,85 38,85 22,74 Z" fill="#C5A059" />
+    
+    <!-- Pupil/Iris (Teal/Dark Green) -->
+    <circle cx="64" cy="64" r="18" fill="#1A433A" />
+    
+    <!-- Inner pupil (Darker) -->
+    <circle cx="64" cy="64" r="10" fill="#0E2722" />
+    
+    <!-- Highlight -->
+    <circle cx="59" cy="59" r="4" fill="#FFFFFF" />
+    
+    <!-- Star Sparkle (Top Right) -->
+    <path d="M96,38 L99,44 L105,47 L99,50 L96,56 L93,50 L87,47 L93,44 Z" fill="#C5A059" />
+</svg>
