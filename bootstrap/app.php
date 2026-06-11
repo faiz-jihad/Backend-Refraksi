@@ -76,4 +76,23 @@ return Application::configure(basePath: dirname(__DIR__))
             
             return false; // Let Laravel handle the web view rendering for web routes
         });
+
+        $exceptions->render(function (\Exception $e, Request $request) {
+        if ($this->shouldPrerender($request)) {
+            try {
+                $response = Http::withHeaders([
+                    'X-Prerender-Token' => config('services.prerender.token'),
+                ])->timeout(10)->get('https://service.prerender.io/' . $request->fullUrl());
+
+                if ($response->successful()) {
+                    return response($response->body(), $response->status())
+                        ->header('Content-Type', 'text/html; charset=UTF-8');
+                }
+            } catch (\Exception $e) {
+                // fallback jika prerender gagal
+            }
+        }
+
+        return false; // biarkan default error handling Laravel
+    });
     })->create();

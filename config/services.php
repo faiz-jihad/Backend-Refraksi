@@ -50,4 +50,10 @@ return [
         'timeout' => env('OPENROUTER_TIMEOUT', 10),
     ],
 
+    // 
+    'prerender' => [
+        'token' => env('PRERENDER_TOKEN'),
+    ],
+
+
 ];
