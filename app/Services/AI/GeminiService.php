@@ -418,7 +418,7 @@ class GeminiService
      */
     private function validateSnellenData(array $data): void
     {
-        $requiredFields = ['smallest_row_read', 'test_type'];
+        $requiredFields = ['test_type'];
         
         foreach ($requiredFields as $field) {
             if (!isset($data[$field])) {
@@ -429,7 +429,7 @@ class GeminiService
         }
 
         // Validate test_type
-        $validTestTypes = ['distance', 'near', 'comprehensive'];
+        $validTestTypes = ['distance', 'near', 'comprehensive', 'astigmatism', 'cylinder'];
         if (!in_array($data['test_type'], $validTestTypes)) {
             throw new InvalidArgumentException(
                 'Tipe tes tidak valid. Harus salah satu dari: ' . implode(', ', $validTestTypes)

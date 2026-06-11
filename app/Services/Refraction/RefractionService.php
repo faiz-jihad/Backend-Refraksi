@@ -176,6 +176,10 @@ class RefractionService
                             }
                         });
                     } catch (\Exception $e) {
+                        Log::error('AI Snellen analysis failed', [
+                            'message' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString()
+                        ]);
                         $aiResult = $smartMock;
                         $aiResult['recommendation'] = "🤖 [MOCK MODE - API LIMIT] " . $smartMock['recommendation'];
                         $aiResult['error'] = $e->getMessage();
@@ -256,6 +260,10 @@ class RefractionService
                         }
                     });
                 } catch (\Exception $e) {
+                    Log::error('AI Refraction analysis failed', [
+                        'message' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
                     $aiResult = $smartMock;
                     $aiResult['recommendation'] = "🤖 [MOCK MODE - API LIMIT] " . $smartMock['recommendation'];
                     $aiResult['error'] = $e->getMessage();
