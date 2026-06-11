@@ -55,12 +55,7 @@ export default function DarkNavbar({ loginRoute, adminRoute, isAuthenticated, us
 
                     {/* Logo */}
                     <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.accent})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 16px rgba(255, 46, 147, 0.4)` }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                <circle cx="12" cy="12" r="3" />
-                            </svg>
-                        </div>
+                        <img src="/favicon.svg" alt="MataCeria Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
                         <span style={{ fontWeight: 700, fontSize: '0.95rem', color: T.text, letterSpacing: '-0.02em' }}>
                             Mata<span style={{ color: T.brand }}>Ceria</span>
                         </span>

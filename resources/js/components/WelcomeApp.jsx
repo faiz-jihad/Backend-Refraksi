@@ -725,17 +725,7 @@ function PageLoadAnimation({ onComplete }) {
                 alignItems: 'center', gap: 24,
             }}>
                 {/* Logo */}
-                <div style={{
-                    width: 72, height: 72, borderRadius: 20,
-                    background: T.grad,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 0 40px rgba(34,197,94,0.4)',
-                }}>
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                </div>
+                <img src="/favicon.svg" alt="MataCeria Logo" style={{ width: 72, height: 72, objectFit: 'contain', filter: 'drop-shadow(0 0 20px rgba(34,197,94,0.4))' }} />
 
                 {/* Brand name */}
                 <div ref={textRef} style={{ textAlign: 'center' }}>
@@ -1091,11 +1081,7 @@ function Navbar({ loginRoute, adminRoute, isAuthenticated, userName, scrolled, s
             }}>
                 <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: T.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(22,163,74,0.35)' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                            </svg>
-                        </div>
+                        <img src="/favicon.svg" alt="MataCeria Logo" style={{ width: 36, height: 36, objectFit: 'contain' }} />
                         <span style={{ fontWeight: 800, fontSize: '1.1rem', color: T.text, letterSpacing: '-0.02em' }}>
                             Mata<span style={{ color: T.brand }}>Ceria</span>
                         </span>
@@ -1374,7 +1360,7 @@ function HeroSection({ loginRoute, adminRoute, isAuthenticated, apkRoute, onStor
                             style={{ position: 'absolute', top: '8%', left: '-4%', background: '#fff', borderRadius: 14, padding: '10px 14px', boxShadow: T.shadowM, border: `1px solid ${T.border}`, zIndex: 5 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <div style={{ width: 28, height: 28, borderRadius: 8, background: T.grad, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    <img src="/favicon.svg" alt="Logo" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '0.58rem', color: T.text3 }}>{t('hero_diagnostics')}</div>
@@ -1849,9 +1835,7 @@ function Footer({ onGeneralClick }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1.5fr repeat(3, 1fr)', gap: '3rem', marginBottom: '3rem' }} className="mc-footer-grid">
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 10, background: T.grad, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </div>
+                            <img src="/favicon.svg" alt="MataCeria Logo" style={{ width: 36, height: 36, objectFit: 'contain' }} />
                             <span style={{ fontWeight: 800, fontSize: '1.15rem' }}>Mata<span style={{ color: T.brandL }}>Ceria</span></span>
                         </div>
                         <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, maxWidth: 260, margin: '0 0 24px' }}>

@@ -40,9 +40,7 @@ function PhoneMockup() {
                     {/* App header */}
                     <div style={{ padding: '12px', borderRadius: '14px', background: 'rgba(14,165,233,0.12)', border: `1px solid rgba(14,165,233,0.2)` }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                            <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: `linear-gradient(135deg, ${T.brand}, ${T.accent})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                            </div>
+                            <img src="/favicon.svg" alt="Logo" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
                             <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#fff' }}>MataCeria</span>
                         </div>
                         <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.5)' }}>Diagnostik Aktif</div>
