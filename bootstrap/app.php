@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Global middleware — diterapkan ke semua request
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->append(\App\Http\Middleware\SanitizeInput::class);
+        $middleware->append(\App\Http\Middleware\PrerenderMiddleware::class);
 
         $middleware->alias([
             'role'     => \App\Http\Middleware\RoleMiddleware::class,
@@ -76,23 +77,5 @@ return Application::configure(basePath: dirname(__DIR__))
             
             return false; // Let Laravel handle the web view rendering for web routes
         });
-
-        $exceptions->render(function (\Exception $e, Request $request) {
-        if ($this->shouldPrerender($request)) {
-            try {
-                $response = Http::withHeaders([
-                    'X-Prerender-Token' => config('services.prerender.token'),
-                ])->timeout(10)->get('https://service.prerender.io/' . $request->fullUrl());
-
-                if ($response->successful()) {
-                    return response($response->body(), $response->status())
-                        ->header('Content-Type', 'text/html; charset=UTF-8');
-                }
-            } catch (\Exception $e) {
-                // fallback jika prerender gagal
-            }
-        }
-
-        return false; // biarkan default error handling Laravel
-    });
     })->create();
+
